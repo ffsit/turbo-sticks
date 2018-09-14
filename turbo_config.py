@@ -3,7 +3,7 @@ web_uri = 'https://sticks.turbo.chat'
 page_title = 'Turbo Sticks Account Management'
 page_description = 'Turbo Sticks is an authentication bridge between various Turbo services.'
 app_secret = 'itsasecret' # Secret used for crypto
-base_path = '/'
+base_path = ''
 api_path = '/api' # JSON calls, local only for now
 debug_mode = False;
 

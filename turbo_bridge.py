@@ -28,19 +28,19 @@ def application(env, start_response):
 			'Database connection failed.',
 			'error')
 
+	elif(path.startswith(api_path)):
+		response_body, response_headers, status = generate_json_response({'error': 'Unknown API call.'})
+		for name in api_calls:
+			if(path == api_path + '/' + name):
+				response_body, response_headers, status = api_calls[name](env, csrf_clerk, turbo_db.db)
+				break
+
 	elif(path.startswith(base_path)):
 		for name in turbo_views:
 			item = turbo_views[name]
 			if(path == item.uri):
 				if(item.view is not None):
 					response_body, response_headers, status = item.view(env, csrf_clerk, turbo_db.db)
-				break
-
-	elif(path.startswith(api_path)):
-		response_body, response_headers, status = generate_json_response({'error': 'Unknown API call.'})
-		for name in api_calls:
-			if(path == api_path + '/' + name):
-				response_body, response_headers, status = api_calls[name](env, csrf_clerk, turbo_db.db)
 				break
 
 	start_response(status, response_headers)

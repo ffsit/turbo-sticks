@@ -1,0 +1,625 @@
+$breakpoint: 600px;
+$reference-height: 860;
+$responsive-multiplier: 100vmin/$reference-height;
+$fixed-multiplier: $breakpoint/$reference-height;
+$spx-multiplier: $responsive-multiplier;
+/* returns a size relative to $spx-multiplier */
+@function spx($pxsize) {
+	@return $pxsize*$spx-multiplier;
+}
+
+// use responsive sizes above breakpoint, fixed sizes below
+@mixin min-width-media($bp) {
+	$spx-multiplier: $fixed-multiplier !global;
+	@content;
+	$spx-multiplier: $responsive-multiplier !global;
+	@media (min-width: #{$bp}) and (min-height: #{$bp}) {
+		@content;
+	}
+}
+
+// GLOBALS
+$bg-color: #707070;
+$fg-color: #ddd;
+$header-bg-color: #444;
+$main-bg-color: #333;
+$main-border-color: #555;
+$inset-color: #272727; // input text boxes, quotes, etc.
+$outset-color: #444; // buttons, table headings, etc.
+$shadow-color: rgba(0, 0, 0, 0.25);
+$gradient-accent: rgba(0, 0, 0, 0.15);
+$accent-color: #2f70a1;
+
+ // use functions for global sizes, so they get computed fresh
+@function font-size() { @return spx(15); }
+@function line-height() { @return spx(22); }
+@function font-size-big() { @return spx(27); }
+@function line-height-big() { @return spx(35); }
+
+$a-tags: 'a,, a:link, a:active, a:hover, a:visited';
+$a-tags-hover: 'a:active, a:hover';
+
+// IMPORTS
+@import 'prefixed.scss'; // css properties with prefixes for increased browser support
+@import 'fonts.scss'; // custom font families
+
+// Standard Effects
+$standard-shadow: spx(2) spx(2) spx(10) $shadow-color;
+@mixin standard-shadow() {
+	@include box-shadow($standard-shadow);
+}
+
+$top-shadow: spx(2) 0 spx(10) $shadow-color;
+@mixin top-shadow() {
+	@include box-shadow($top-shadow);
+}
+
+$standard-inset-shadow: inset spx(3) spx(3) spx(10) $shadow-color;
+@mixin standard-inset-shadow() {
+	@include box-shadow($standard-inset-shadow);
+}
+
+@mixin standard-gradient($color) {
+	background: $color linear-gradient(-60deg, $gradient-accent, transparent);
+}
+
+// zero sized, relative sized and non-sized rules
+* {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+html {
+	height: 100%;
+}
+
+body {
+	min-height: 100%;
+	overflow-y: scroll;
+	overflow-x: hidden;
+	background: $bg-color;
+	color: $fg-color;
+	font-family: Bitter, Arial, Helvetica, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+	font-weight: bold;
+}
+
+#{$a-tags} {
+	color: $fg-color;
+	text-decoration: none;
+
+	&.button {
+		display: inline-block;
+		position: relative;
+		vertical-align: middle;
+		font-weight: bold;
+		background: $outset-color;
+		@include standard-gradient($outset-color);
+	}
+}
+
+#{$a-tags-hover} {
+	color: $accent-color;
+	text-decoration: underline;
+
+	&.button {
+		color: $fg-color;
+		text-decoration: none;
+		background: mix($accent-color, $outset-color, 10%);
+		@include standard-gradient(mix($accent-color, $outset-color, 10%));
+	}
+}
+
+section {
+	@include display-flex();
+	@include flex-flow(row nowrap);
+	position: relative;
+}
+
+label {
+	display: inline-block;
+	vertical-align: middle;
+}
+
+input {
+	display: inline-block;
+	position: relative;
+	color: $fg-color;
+	font-family: Bitter, Arial, Helvetica, sans-serif;
+	vertical-align: middle;
+
+	&:focus {
+		outline: none !important;
+	}
+
+	&:disabled, &[readonly] {
+		color: darken($fg-color, 20%);
+	}
+
+	&[type=text], &[type=password], &[type=number] {
+		background: $inset-color;
+
+		&:enabled:not([readonly]):hover {
+			background: lighten($inset-color, 2%);
+		}
+	}
+
+	&[type=button], &[type=submit], &[type=reset] {
+		font-weight: bold;
+		background: $outset-color;
+		@include standard-gradient($outset-color);
+
+		&:enabled:hover {
+			background: mix($accent-color, $outset-color, 10%);
+			@include standard-gradient(mix($accent-color, $outset-color, 10%));
+		}
+	}
+
+	&[type=checkbox], &[type=radio] {
+		position: relative;
+		padding: 0;
+		@include appearance(none);
+
+		&:before {
+			content: '';
+			color: $accent-color;
+			font-weight: bold;
+			position: absolute;
+			top: 0;
+			left: 0;
+			display: inline-block;
+			overflow: visible;
+			text-align: center;
+			vertical-align: middle;
+			cursor: pointer;
+			background: $inset-color;
+		}
+
+		&:enabled:hover:before {
+			background: lighten($inset-color, 2%);
+		}
+	}
+
+	&[type=checkbox]:checked:before {
+		content:'\2713';
+	}
+
+	&[type=radio]:checked:before {
+		content:'\2022';
+	}
+}
+
+#header {
+	position: relative;
+	z-index: 2;
+	width: auto;
+	background: $header-bg-color;
+	@include standard-gradient($header-bg-color);
+}
+
+#logo {
+	display: inline-block;
+	background: transparent url('/static/logo.png') no-repeat center;
+}
+
+#logo-text {
+	display: inline-block;
+	background: transparent url('/static/logo-text.png') no-repeat center;
+}
+
+#page {
+	position: relative;
+	z-index: 1;
+	width: auto;
+	background: $main-bg-color;
+	@include standard-gradient($main-bg-color);
+}
+
+#nav {
+	position: absolute;
+	overflow: hidden;
+	z-index: 10;
+	right: 0;
+	display: block;
+	list-style: none;
+	background: $outset-color;
+	@include standard-gradient($outset-color);
+	@include transition(max-height 0.5s ease, padding 0.5s ease);
+	font-family: "Noto Sans", Arial, Helvetica, sans-serif;
+	font-weight: bold;
+
+	&.no-js:hover, &.no-js:focus, &.no-js:focus-within, &.no-js:active, &.hover {
+		li.arrow.down span {
+			opacity: 0;
+			font-size: 0;
+			height: 0;
+			line-height: 0;
+			padding-top: 0;
+		}
+	}
+
+	li {
+		display: block;
+		margin: 0;
+		&:hover {
+			background: rgba($accent-color, 0.1);
+		}
+
+		a, span {
+			display: block;
+		}
+
+		a {
+			text-decoration: none !important;
+		}
+
+		span {
+			color: darken($fg-color, 30%);
+			cursor: default;
+		}
+
+		&.arrow {
+			text-align: center;
+			background: transparent !important;
+			span { 
+				cursor: pointer;
+			}
+
+			&:hover, &:focus, &:focus-within, &:active {
+				span {
+					color: $accent-color;
+				}
+			}
+
+			&.down span {
+				@include transition(all 0.5s ease);
+			}
+
+			&.down span:before  {
+				content: '\2304';
+			}
+
+			
+			&.up span:before  {
+				content: '\2303';
+			}
+		}
+	}
+}
+
+#avatar {
+	display: inline-block;
+	float: left;
+	background: $outset-color;
+	@include standard-gradient($outset-color);
+}
+
+.half {
+	@include flex-grow(6);
+	@include flex-shrink(6);
+}
+
+.third {
+	@include flex-grow(4);
+	@include flex-shrink(4);
+}
+
+.quarter {
+	@include flex-grow(3);
+	@include flex-shrink(3);
+}
+
+.sixth {
+	@include flex-grow(2);
+	@include flex-shrink(2);
+}
+
+.rigid {
+	@include flex-grow(0);
+	@include flex-shrink(0);
+}
+
+.control {
+	display: inline-block;
+	cursor: pointer;
+	vertical-align: middle;
+	font-family: "Heydings Controls";
+
+	&:hover {
+		color: $accent-color;
+	}
+}
+
+#notification {
+	display: inline-block;
+	visibility: hidden;
+	opacity: 0;
+	z-index: 100;
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	@include transform(translate(-50%, -50%));
+	background: $outset-color;
+	@include standard-gradient($outset-color);
+	@include transition(visibility 0.5s linear, opacity 0.5s linear);
+}
+
+#chat, #stream {
+	position: relative;
+	width: 100%;
+}
+
+#page.maximized {
+	z-index: 100;
+	padding: 0;
+	margin: 0;
+	width: 100%;
+
+	#chat, #stream {
+		position: fixed;
+		top: 0;
+		left: 0;
+		height: 100%;
+		width: 100%;
+		max-width: 100%;
+		z-index: 1000;
+	}
+}
+
+#content.fullwidth {
+	max-width: 100%;
+}
+
+#minimize {
+	position: fixed;
+	top: 0;
+	right: 0;
+	z-index: 1100;
+	opacity: 0;
+	visibility: hidden;
+	background: $outset-color;
+	@include standard-gradient($outset-color);
+	@include transition(opacity 0.5s linear);
+}
+
+.shown {
+	opacity: 1;
+	visibility: visible;
+}
+
+// sized rules that require a media query with breakpoint
+@include min-width-media($breakpoint) {
+	body {
+		font-size: font-size();
+		line-height: line-height();
+	}
+
+	h1, h2, h3, h4, h5, h6 {
+		font-size: font-size-big();
+		line-height: line-height-big();
+		padding-bottom: spx(10);
+	}
+
+	section section {
+		@include flex(1 1 spx(8));
+	}
+
+	p {
+		text-align: justify;
+		padding: (line-height() - font-size())/2 0;
+		margin: spx(5) 0;
+	}
+
+	ul {
+		margin: 0 0 spx(20) spx(20);
+
+		ul {
+			margin: 0 0 0 spx(20);
+		}
+	}
+
+	li {
+		margin: 0 0 spx(10) 0;
+	}
+
+	label {
+		font-size: font-size();
+		padding: (line-height() - font-size())/2 0;
+		line-height: line-height();
+		margin: spx(4);
+		@include flex(1 1 spx(0));
+	}
+
+	#{$a-tags} {
+		&.button {
+			font-size: font-size();
+			padding: spx(5) spx(10);
+			line-height: line-height();
+			border-radius: spx(3);
+			margin: spx(4);
+			@include standard-shadow();
+		}
+	}
+
+	input {
+		font-size: font-size();
+		padding: (line-height() - font-size())/2 (line-height() - font-size());
+		line-height: line-height();
+		border-radius: spx(3);
+		margin: spx(4);
+		@include flex(1 1 spx(8));
+
+		&[type=text], &[type=password], &[type=number] {
+			@include standard-inset-shadow();
+
+			&:enabled:not([readonly]):focus {
+				@include inner-border($accent-color, spx(1), inset $standard-shadow);
+			}
+		}
+
+		&[type=button], &[type=submit], &[type=reset] {
+			@include standard-shadow();
+
+			&:enabled:focus {
+				@include inner-border($accent-color, spx(1));
+			}
+		}
+
+		&[type=checkbox], &[type=radio] {
+			height: line-height();
+			width: line-height();
+			margin: spx(6)+(line-height() - font-size())/2 spx(6);
+
+			&:before {
+				font-size: line-height();
+				line-height: line-height();
+				text-shadow: spx(2) spx(2) spx(5) $shadow-color;
+				height: line-height();
+				width: line-height();
+				border-radius: spx(3);
+				@include standard-inset-shadow();
+			}
+
+			&:enabled:focus:before {
+				@include inner-border($accent-color, spx(1), inset $standard-shadow);
+			}
+		}
+
+		&[type=radio]:before {
+			border-radius: line-height()/2;
+		}
+
+		&.left {
+			margin-right: 0;
+			border-radius: spx(3) 0 0 spx(3);
+		}
+
+		&.middle {
+			border-radius: 0;
+			margin-left: 0;
+			margin-right: 0;
+		}
+
+		&.right {
+			margin-left: 0;
+			border-radius: 0 spx(3) spx(3) 0;
+		}
+	}
+
+	#header {
+		height: spx(100);
+		margin: 0 spx(50);
+		@include border-radius(0 0 spx(15) spx(15));
+		@include top-shadow();
+	}
+
+	#logo {
+		height: spx(100);
+		width: spx(100);
+		@include background-size(spx(86) spx(86));
+	}
+
+	#logo-text {
+		height: spx(100);
+		width: spx(200);
+		@include background-size(spx(184.5) spx(72));
+	}
+
+	#page {
+		min-height: spx($reference-height - 170);
+		margin: 0 spx(65) spx(65) spx(65);
+		border: spx(5) solid $main-border-color;
+		border-top-width: 0;
+		@include border-radius(0 0 spx(10) spx(10));
+		@include standard-shadow();
+	}
+
+	#nav {
+		width: spx(190);
+		max-height: line-height() + spx(20);
+		padding: 0 spx(10) 0 spx(10);
+		margin: 0 0 line-height() line-height();
+		@include border-radius(0 0 0 spx(10));
+		@include standard-shadow();
+
+		li {
+			@include border-radius(0 0 0 spx(10));
+			a, span {
+				font-size: font-size();
+				line-height: line-height();
+				height: line-height();
+				padding: spx(15);
+			}
+
+			&.arrow {
+				span {
+					font-size: font-size-big();
+				}
+
+				&.down span {
+					padding: spx(5) 0 spx(20) 0;
+				}
+
+				&.up span {
+					padding: spx(15) 0 spx(5) 0;
+				}
+			}
+		}
+
+		&.no-js:hover, &.no-js:focus, &.no-js:focus-within, &.no-js:active, &.hover {
+			max-height: spx($reference-height - 170);
+
+			li.arrow.down span {
+				padding-bottom: spx(10);
+			}
+		}
+	}
+
+	#content {
+		max-width: spx(5*$reference-height/4);
+		padding: line-height();
+	}
+
+	#avatar {
+		height: spx(80);
+		width: spx(80);
+		margin: 0 spx(15) spx(15) 0;
+		border: spx(3) solid $accent-color;
+		@include border-radius(spx(6));
+		@include standard-shadow();
+	}
+
+	#notification {
+		padding: spx(10);
+		@include border-radius(spx(6));
+		@include standard-shadow();
+	}
+
+	#chat, #stream {
+		height: spx($reference-height - 264);
+		@include border-radius(spx(6));
+		@include standard-shadow();
+	}
+
+	#page.maximized {
+		#chat, #stream {
+			border-radius: 0;
+			height: 100vh;
+		}
+	}
+
+	.control {
+		padding: 0 spx(5) 0.2*font-size-big() spx(5);
+		font-size: 0.8*font-size-big();
+	}
+
+	#minimize {
+		padding: spx(5);
+		margin: 0 0 line-height() line-height();
+		@include border-radius(0 0 0 spx(6));
+		@include top-shadow();
+	}
+}

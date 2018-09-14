@@ -1,0 +1,83 @@
+@mixin prefix($declarations, $prefixes: webkit moz o) {
+	@each $property, $value in $declarations {
+		@each $prefix in $prefixes {
+			-#{$prefix}-#{$property}: #{$value};
+		}
+		#{$property}: #{$value};
+	}
+}
+
+@mixin background-size($size...) {
+	@include prefix((background-size: $size));
+}
+
+@mixin border-radius($radius...) {
+	@include prefix((border-radius: $radius), (webkit moz));
+}
+
+@mixin box-shadow($properties...) {
+	@include prefix((box-shadow: $properties), (webkit moz));
+}
+
+@mixin appearance($value) {
+	@include prefix((appearance: $value), (webkit moz));
+}
+
+@mixin inner-border($color, $width, $shadow: null) {
+	@if(shadow) {
+		@include box-shadow(inset $width 0 0 $color,
+		                    inset -1*$width 0 0 $color,
+		                    inset 0 $width 0 $color,
+		                    inset 0 -1*$width 0 $color);
+	} @else {
+		@include box-shadow($shadow,
+		                    inset $width 0 0 $color,
+		                    inset -1*$width 0 0 $color,
+		                    inset 0 $width 0 $color,
+		                    inset 0 -1*$width 0 $color);
+	}
+}
+
+@mixin transition($properties...) {
+	@include prefix((transition: $properties));
+}
+
+@mixin transform($properties...) {
+	@include prefix((transform: $properties), (webkit moz o ms));
+}
+
+@mixin display-flex() {
+	display: block;
+	display: webkit-flex;
+	display: moz-flex;
+	display: ms-flex;
+	display: flex;
+}
+
+@mixin display-inline-flex() {
+	display: block;
+	display: webkit-flex;
+	display: moz-flex;
+	display: ms-flex;
+	display: flex;
+}
+
+@mixin flex-flow($properties...) {
+	@include prefix((flex-flow: $properties), (webkit moz ms));
+}
+
+@mixin flex($properties...) {
+	@include prefix((flex: $properties), (webkit moz ms));
+}
+
+@mixin flex-grow($weight) {
+	@include prefix((flex-grow: $weight), (webkit moz ms));
+}
+
+@mixin flex-shrink($weight) {
+	@include prefix((flex-shrink: $weight), (webkit moz ms));
+} 
+
+@mixin flex-basis($size) {
+	@include prefix((flex-basis: $size), (webkit moz ms));
+} 

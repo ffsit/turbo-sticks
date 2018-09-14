@@ -1,0 +1,72 @@
+// Bitter Font
+@font-face {
+		font-family: 'Bitter';
+		src: url('/static/fonts/Bitter-BoldItalic.woff2') format('woff2'),
+		     url('/static/fonts/Bitter-BoldItalic.woff') format('woff');
+		font-weight: bold;
+		font-style: italic;
+}
+
+@font-face {
+		font-family: 'Bitter';
+		src: url('/static/fonts/Bitter-Bold.woff2') format('woff2'),
+		     url('/static/fonts/Bitter-Bold.woff') format('woff');
+		font-weight: bold;
+		font-style: normal;
+}
+
+@font-face {
+		font-family: 'Bitter';
+		src: url('/static/fonts/Bitter-Regular.woff2') format('woff2'),
+		     url('/static/fonts/Bitter-Regular.woff') format('woff');
+		font-weight: normal;
+		font-style: normal;
+}
+
+@font-face {
+		font-family: 'Bitter';
+		src: url('/static/fonts/Bitter-Italic.woff2') format('woff2'),
+		     url('/static/fonts/Bitter-Italic.woff') format('woff');
+		font-weight: normal;
+		font-style: italic;
+} 
+
+@font-face {
+    font-family: 'Noto Sans';
+    src: url('/static/fonts/NotoSans-BoldItalic.woff2') format('woff2'),
+        url('/static/fonts/NotoSans-BoldItalic.woff') format('woff');
+    font-weight: bold;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Noto Sans';
+    src: url('/static/fonts/NotoSans-Italic.woff2') format('woff2'),
+        url('/static/fonts/NotoSans-Italic.woff') format('woff');
+    font-weight: normal;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Noto Sans';
+    src: url('/static/fonts/NotoSans-Bold.woff2') format('woff2'),
+        url('/static/fonts/NotoSans-Bold.woff') format('woff');
+    font-weight: bold;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Noto Sans';
+    src: url('/static/fonts/NotoSans-Regular.woff2') format('woff2'),
+        url('/static/fonts/NotoSans-Regular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Heydings Controls';
+    src: url('/static/fonts/heydings_controls.woff2') format('woff2'),
+        url('/static/fonts/heydings_controls.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}

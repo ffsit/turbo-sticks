@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+%(html_header)s
+</head>
+<body>
+%(header)s
+<div id="page">
+%%(nav)s
+	<div id="content">
+		<h1>Account Overview</h1>
+		<img id="avatar" src="%%(avatar_src)s">
+		<form name="reset_app_password" action="%%(form_action)s" method="POST">
+			<input name="csrf_token" type="hidden" value="%%(csrf_token)s">
+			<input name="reset_app_password" type="hidden" value="1">
+			<section>
+				<label>Username:</label><label class="third">%%(username)s</label>
+			</section>
+			<section>
+				<label>App-Password:</label><section class="third"><!--
+				--><input id="app_password" type="text" value="%%(app_password)s" class="left" readonly><!--
+				--><input type="submit" value="&#x21bb;" title="Generate a new app-password." class="right rigid"></section>
+			</section>
+		</form>
+	</div>
+</div>
+%(footer)s
+</body>

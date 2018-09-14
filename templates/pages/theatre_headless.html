@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+ 	<title>%%(title)s</title>
+	<meta name="description" content="%%(description)s">
+	<link rel="stylesheet" href="/static/stream.css">
+</head>
+<body>
+<div id="live">
+  <div id="chat_embed">
+    <div id="chat">
+     <iframe id="chat" src="%%(chat_uri)s" frameborder="0" scrolling="no" width="300" height="490"></iframe>
+    </div>
+  </div>
+  <div id="player_embed" onmouseover="controlsIn();" onmouseout="controlsOut();">
+     <center id="player" style="background:#070707"><h1><br><br><br>No Player yet</h1></center>     
+     <div class="turboplayer_controls_wrapper" id="turboplayer_controls_wrapper">
+      <span class="vsources_span">Source:</span> <select id="vsources" class="vsources" onchange="chooseStream();"></select>
+     </div>
+     <div id="toggleview">
+      <div class="button maximize"></div>
+    </div>
+  </div>
+</div>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/clappr/0.2.35/clappr.min.js"> </script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/clappr.rtmp/0.0.12/rtmp.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+<script type="text/javascript">
+var minimize = function() {
+  $("#toggleview").unbind('click').click(maximize);
+  $("#chat_embed").animate({
+    width: "0px"
+  }, 600);
+  $("#player_embed").animate({
+    marginRight: "0px"
+  }, 610);
+  $("#toggleview .button").fadeOut(500).toggleClass("maximize minimize");
+}
+
+var maximize = function() {
+  $("#toggleview").unbind('click').click(minimize);
+  $("#chat_embed").delay(10).animate({
+    width: "300px"
+  }, 600);
+  $("#player_embed").animate({
+    marginRight: "305px"
+  }, 610);
+  $("#toggleview .button").fadeOut(500).toggleClass("maximize minimize");
+}
+
+var autoplay_turboplayer = 0;
+var vsrc = [
+     { src: "", label: "None", selected: true  }
+    ];
+
+var src;
+var chooseStream = function(){
+        src =  document.getElementById("vsources").value;
+    document.getElementById("player").setAttribute("src", src);
+}
+
+
+var controlsIn = function(){
+    var element = document.getElementById('turboplayer_controls_wrapper');
+    element.className += " turboplayer_controls_fadeIn";
+}
+
+var controlsOut = function(){
+    document.getElementById("turboplayer_controls_wrapper").className =
+       document.getElementById("turboplayer_controls_wrapper").className.replace
+          ( /(?:^|\s)turboplayer_controls_fadeIn(?!\S)/g , '' );
+    document.getElementById("vsources").blur();
+}
+
+var select = document.getElementById("vsources");
+
+vsrc.map(function(videosource){
+	select[select.length] = new Option(videosource.label, videosource.src, false, videosource.selected);
+});
+
+$("#toggleview").click(minimize).hover(function() {
+	$("#toggleview .button").stop(0,0).fadeIn(500);
+}, function() {
+	$("#toggleview .button").stop(0,1).fadeOut(500);
+});
+</script>
+</body>
+</html>

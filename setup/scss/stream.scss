@@ -1,0 +1,134 @@
+// IMPORTS
+@import 'prefixed.scss'; // css properties with prefixes for increased browser support
+
+ * {
+   margin: 0;
+   padding: 0;
+   border: 0;
+ }
+
+ html, body, #live {
+   color: #f0f0f0;
+   background-color: #707070;
+   width: 100%;
+   height: 100%;
+   min-height: 100%;
+   overflow: hidden;
+   white-space: nowrap;
+ }
+ 
+ #player_embed {
+   position: relative;
+   height: 100%;
+   margin-right: 305px;
+   min-height: 480px;
+ }
+ 
+ #player {
+   float: left;
+   height: 100%;
+   width: 100%;
+ }
+
+ #my-video {
+   float: left;
+   height: 100%;
+   width: 100%;
+ }
+
+ 
+ #toggleview {
+   position: absolute;
+   right: 0;
+   transform: translateY(115%);
+   height: 30%;
+   width: 100px;
+   vertical-align: middle;
+   overflow:hidden;
+ }
+ 
+ #toggleview .button {
+   position: absolute;
+   top: 50%;
+   right: 0;
+   height: 130px;
+   width: 40px;
+   margin: -65px auto;
+   font: bold 32px/130px Verdana, sans-serif;
+   text-shadow: 0 0 5px #777;
+   text-align: center;
+   vertical-align: middle;
+   background: #121214;
+   box-shadow: 0 0 20px black;
+   display: none;
+ }
+ 
+ .maximize:before {
+   content: "»";
+ }
+ 
+ .minimize:before {
+   content: "«";
+ }
+ 
+ #chat_embed {
+   overflow: hidden;
+   width: 300px;
+   height: 100%;
+   min-height: 480px;
+   float: right;
+ }
+ 
+ #chat {
+   padding-bottom: 5px;
+ }
+
+ #chat_embed p {
+   padding-left: 8px;
+   padding-bottom: 1em;
+ }
+ 
+ #chat_embed a { color: white; }
+
+.vsources {
+    position: absolute;
+    outline: none;
+    background: transparent;
+    border: none;
+    color: #BBB;
+    font-size: 1em;
+    top: 2px;
+    left: 50px;
+    z-index: 100002;
+}
+
+.vsources_span {
+    position: absolute;
+    outline: none;
+    background: transparent;
+    border: none;
+    color: #BBB;
+    font-size: 1em;
+    top: 2px;
+    left: 2px;
+    z-index: 100002;
+}
+
+.vsources option {
+    color: #000;
+}
+
+.turboplayer_controls_wrapper {
+    position: absolute;
+    box-shadow: 0 0 20px black;
+    top: 0;
+    opacity: 0;
+    height: 26px;
+    width: 100%;
+    background-color: #000;
+    @include transition(opacity .25s ease-in-out);
+}
+
+.turboplayer_controls_fadeIn {
+    opacity: 1;
+}

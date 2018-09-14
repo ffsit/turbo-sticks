@@ -39,7 +39,7 @@ Setup
 * Setup Postgres database and user for use with turbo sticks. Run `initdb.sql` to initialize tables
 * Setup an App in Mastadon with read:accounts privileges
 * Adjust settings in `turbo_config.py`
-* Run turbo_sticks.py using uWSGI
+* Run turbo_bridge.py using uWSGI
 
 Change Log
 -----------

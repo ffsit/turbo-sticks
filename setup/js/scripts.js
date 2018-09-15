@@ -25,7 +25,7 @@
 		}
 
 		request.send(data);
-	};
+	}
 
 	function addClass(element, className) {
 		if(element.classList) {
@@ -105,6 +105,7 @@
 			}
 		}
 
+		// App Password
 		var reset_app_password = document.querySelectorAll('form[name=reset_app_password]')[0];
 		if(reset_app_password) {
 			// Copy App Password to Clipboard on Click
@@ -132,6 +133,8 @@
 				return preventDefault(event);
 			});
 		}
+
+		// Maximize stream to headless
 		var stream = document.getElementById('stream');
 		if(stream) {
 			var page = document.getElementById('page');
@@ -148,10 +151,19 @@
 			var minimize = document.createElement('div');
 			minimize.setAttribute('id', 'minimize');
 			minimize.innerHTML = '<span class="control">m</span>';
-			minimize.addEventListener('click', function(){
+			var min = function () {
 				removeClass(page, 'maximized');
 				minimize.style.visibility = 'hidden';
-			});
+			}
+			minimize.addEventListener('click', min);
+			document.onkeydown = function(event) {
+				event = event || window.event;
+				if(('key' in event && (event.key == 'Escape' || event.key == 'Esc')) ||
+				   (event.keyCode == 27))
+				{
+					min();
+				}
+			};
 			minimize.addEventListener('mouseenter', function() {
 				minimize.style.opacity = 1;
 			});
@@ -162,11 +174,118 @@
 		}
 	};
 
+	function choose_video_source(index, player, autoplay) {
+		if(main.vsrc && player && index !== main.cur_video_source) {
+			var video = main.vsrc[index];
+			if(video) {
+				if(main.clappr) {
+					main.clappr.destroy();
+					main.clappr = null;
+				}
+				player.innerHTML = '';
+
+				switch(video.embed_type) {
+					case 'html':
+						player.innerHTML = video.embed;
+						break;
+
+					case 'clappr-flv':
+						main.clappr = new Clappr.Player({
+							source: video.embed,
+							parentId: '#player',
+							poster: '/static/movienight.png',
+							height: '100%',
+							width: '100%',
+							autoPlay: autoplay,
+							mimeType: 'video/flv',
+							plugins: [
+								FLVJSPlayback
+							],
+							playback: {
+								flvjsConfig: {
+									type: 'flv',
+									isLive: true
+								}
+							}
+						});
+						break;
+				}
+
+				main.cur_video_source = index;
+			}
+		}
+	}
+
+	function init_video(vsrc) {
+		var chat_embed = document.getElementById('chat_embed');
+		var player_embed = document.getElementById('player_embed');
+		var toggle = document.getElementById('toggleview');
+		if(chat_embed && player_embed && toggle)
+		{
+			// minimize / maximize chat
+			var toggle_button = toggle.querySelectorAll('.button')[0];
+
+			var minimize_chat = function() {
+				toggle.removeEventListener('click', minimize_chat);
+				toggle.addEventListener('click', maximize_chat);
+				addClass(chat_embed, 'minimized');
+				addClass(player_embed, 'maximized');
+				removeClass(toggle_button, 'maximize');
+				addClass(toggle_button, 'minimize');
+			}
+
+			var maximize_chat = function() {
+				toggle.removeEventListener('click', maximize_chat);
+				toggle.addEventListener('click', minimize_chat);
+				removeClass(chat_embed, 'minimized');
+				removeClass(player_embed, 'maximized');
+				removeClass(toggle_button, 'minimize');
+				addClass(toggle_button, 'maximize');
+			}
+
+			toggle.addEventListener('click', minimize_chat);
+
+			// stream source selection
+			var controls = document.getElementById('turboplayer_controls_wrapper');
+			var select = document.getElementById('vsources');
+			var player = document.getElementById('player');
+
+			if(controls && select && player)
+			{
+				main.vsrc = vsrc;
+
+				controls.addEventListener('mouseenter', function() {
+					sticks.addClass(controls, 'turboplayer_controls_fadeIn');
+				});
+
+				controls.addEventListener('mouseleave', function() {
+					sticks.removeClass(controls, 'turboplayer_controls_fadeIn');
+					select.blur();
+				});
+
+				main.vsrc.map(function(video){
+					select[select.length] = new Option(video.label, select.length, false, video.selected);
+				});
+
+				select.addEventListener('change', function() {
+					choose_video_source(parseInt(select.value), player, true);
+				});
+
+				// init first video
+				choose_video_source(0, player, false);
+			}
+		}
+	}
+
 	// Static Members
 	main.notification = null;
+	main.vsrc = null;
+	main.cur_video_source = null;
+	main.clappr = null;
 
 	// Public Static Methods
 	main.ajax_post = ajax_post;
+	main.init_video = init_video;
 	main.addClass = addClass;
 	main.removeClass = removeClass;
 	main.displayNotifcation = displayNotifcation;

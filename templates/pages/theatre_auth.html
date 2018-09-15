@@ -3,22 +3,17 @@
 <head>
 %(html_header)s
 </head>
-<body>
-%(header)s
-<div id="page">
-%%(nav)s
-	<div id="content">
-		<h1>Awesome Piece Theatre</h1>
-		<p>Use the Password you received in the e-mail from Patreon.</p>
-		<form name="theatre_auth" action="%%(form_action)s" method="POST">
-			<section>
-				<label>Password:</label><section class="third"><!--
-					--><input name="theatre_password" type="password" class="rigid left"><!--
-					--><input type="submit" value="Submit" class="rigid right"><!--
-				--></section>
-			</section>
-		</form>
-	</div>
+<body class="headless">
+<div id="content">
+	<p>Use the Password you received in the e-mail from Patreon.</p>
+	<form name="theatre_auth" action="%%(form_action)s" method="POST">
+		<section>
+			<label>Password:</label><section class="third"><!--
+				--><input name="theatre_password" type="password" class="rigid left"><!--
+				--><input type="submit" value="Submit" class="rigid right"><!--
+			--></section>
+		</section>
+	</form>
 </div>
 %(footer)s
 </body>

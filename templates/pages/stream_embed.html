@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>%%(title)s</title>
+	<meta name="description" content="%%(description)s">
+	<link rel="stylesheet" href="/static/stream.css">
+</head>
+<body>
+<div id="live">
+	<div id="chat_embed">
+		 <iframe id="chat" src="%%(chat_uri)s" frameborder="0" scrolling="no"></iframe>
+	</div>
+	<div id="player_embed">
+		 <div id="player">%%(default_embed)s</div>     
+		 <div class="turboplayer_controls_wrapper" id="turboplayer_controls_wrapper">
+			<span class="vsources_span">Source:</span> <select id="vsources" class="vsources"></select>
+		 </div>
+		 <div id="toggleview">
+			<div class="button maximize"></div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/clappr/0.2.35/clappr.min.js"> </script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clappr-flvjs-playback@latest/dist/clappr-flvjs-playback.min.js"></script>
+<script type="text/javascript" src="/static/scripts.js"></script>
+<script type="text/javascript">
+	sticks.init_video(%%(video_sources)s);
+</script>
+</body>
+</html>

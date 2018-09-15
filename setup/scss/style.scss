@@ -81,6 +81,12 @@ body {
 	background: $bg-color;
 	color: $fg-color;
 	font-family: Bitter, Arial, Helvetica, sans-serif;
+
+	&.headless {
+		overflow-y: hidden;
+		background: darken($bg-color, 10%);
+		@include standard-gradient(darken($bg-color, 10%));
+	}
 }
 
 h1, h2, h3, h4, h5, h6 {

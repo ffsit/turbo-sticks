@@ -1,134 +1,219 @@
+$breakpoint: 500px;
+$reference-height: 700;
+$responsive-multiplier: 100vmin/$reference-height;
+$fixed-multiplier: $breakpoint/$reference-height;
+$spx-multiplier: $responsive-multiplier;
+/* returns a size relative to $spx-multiplier */
+@function spx($pxsize) {
+	@return $pxsize*$spx-multiplier;
+}
+
+// use responsive sizes above breakpoint, fixed sizes below
+@mixin min-width-media($bp) {
+	$spx-multiplier: $fixed-multiplier !global;
+	@content;
+	$spx-multiplier: $responsive-multiplier !global;
+	@media (min-width: #{$bp}) and (min-height: #{$bp}) {
+		@content;
+	}
+}
+
+// GLOBALS
+$bg-color: #707070;
+$player-bg-color: #070707;
+$fg-color: #ddd;
+$inset-color: #272727; // input text boxes, quotes, etc.
+$outset-color: #444; // buttons, table headings, etc.
+$shadow-color: rgba(0, 0, 0, 0.25);
+$gradient-accent: rgba(0, 0, 0, 0.15);
+
+// Standard Effects
+$standard-shadow: spx(2) spx(2) spx(10) $shadow-color;
+@mixin standard-shadow() {
+	@include box-shadow($standard-shadow);
+}
+
+@mixin standard-gradient($color) {
+	background: $color linear-gradient(-60deg, $gradient-accent, transparent);
+}
+
 // IMPORTS
 @import 'prefixed.scss'; // css properties with prefixes for increased browser support
 
- * {
-   margin: 0;
-   padding: 0;
-   border: 0;
- }
+* {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
 
- html, body, #live {
-   color: #f0f0f0;
-   background-color: #707070;
-   width: 100%;
-   height: 100%;
-   min-height: 100%;
-   overflow: hidden;
-   white-space: nowrap;
- }
- 
- #player_embed {
-   position: relative;
-   height: 100%;
-   margin-right: 305px;
-   min-height: 480px;
- }
- 
- #player {
-   float: left;
-   height: 100%;
-   width: 100%;
- }
+html, body, #live {
+	color: $fg-color;
+	width: 100%;
+	height: 100%;
+	min-height: 100%;
+	overflow: hidden;
+	white-space: nowrap;
+}
 
- #my-video {
-   float: left;
-   height: 100%;
-   width: 100%;
- }
+body {
+	background: darken($bg-color, 10%);
+	@include standard-gradient(darken($bg-color, 10%));
+}
 
- 
- #toggleview {
-   position: absolute;
-   right: 0;
-   transform: translateY(115%);
-   height: 30%;
-   width: 100px;
-   vertical-align: middle;
-   overflow:hidden;
- }
- 
- #toggleview .button {
-   position: absolute;
-   top: 50%;
-   right: 0;
-   height: 130px;
-   width: 40px;
-   margin: -65px auto;
-   font: bold 32px/130px Verdana, sans-serif;
-   text-shadow: 0 0 5px #777;
-   text-align: center;
-   vertical-align: middle;
-   background: #121214;
-   box-shadow: 0 0 20px black;
-   display: none;
- }
- 
- .maximize:before {
-   content: "»";
- }
- 
- .minimize:before {
-   content: "«";
- }
- 
- #chat_embed {
-   overflow: hidden;
-   width: 300px;
-   height: 100%;
-   min-height: 480px;
-   float: right;
- }
- 
- #chat {
-   padding-bottom: 5px;
- }
+#player_embed {
+	position: relative;
+	height: 100%;
+	@include transition(margin-right 0.6s ease);
 
- #chat_embed p {
-   padding-left: 8px;
-   padding-bottom: 1em;
- }
- 
- #chat_embed a { color: white; }
+	&.maximized {
+		margin-right: 0;
+	}
+}
+
+#player {
+	float: left;
+	height: 100%;
+	width: 100%;
+	background: $player-bg-color;
+	overflow: hidden;
+}
+
+#player-frame {
+	float: left;
+	height: 100%;
+	width: 100%;
+}
+
+
+#toggleview {
+	position: absolute;
+	right: 0;
+	transform: translateY(115%);
+	height: 30%;
+	vertical-align: middle;
+	overflow:hidden;
+
+	.button {
+		position: absolute;
+		top: 50%;
+		right: 0;
+		text-align: center;
+		vertical-align: middle;
+		background: $outset-color;
+		@include standard-gradient($outset-color);
+		visibility: hidden;
+		opacity: 0;
+		@include transition(opacity 0.5s ease, visibility 0.5s ease);
+	}
+
+	&:hover .button {
+		visibility: visible;
+		opacity: 1;
+	}
+}
+
+.maximize:before {
+	content: "»";
+}
+
+.minimize:before {
+	content: "«";
+}
+
+#chat_embed {
+	position: relative;
+	overflow: hidden;
+	height: 100%;
+	height: 100vh;
+	float: right;
+	z-index: 20;
+	@include transition(width 0.6s ease);
+
+	&.minimized {
+		width: 0;
+	}
+}
+
+#chat {
+	width: 100%;
+	height: 100%;
+}
 
 .vsources {
-    position: absolute;
-    outline: none;
-    background: transparent;
-    border: none;
-    color: #BBB;
-    font-size: 1em;
-    top: 2px;
-    left: 50px;
-    z-index: 100002;
+	position: absolute;
+	outline: none;
+	background: transparent;
+	border: none;
+	color: $fg-color;
+	z-index: 10;
 }
 
 .vsources_span {
-    position: absolute;
-    outline: none;
-    background: transparent;
-    border: none;
-    color: #BBB;
-    font-size: 1em;
-    top: 2px;
-    left: 2px;
-    z-index: 100002;
+	position: absolute;
+	outline: none;
+	background: transparent;
+	border: none;
+	color: $fg-color;
+	z-index: 10;
 }
 
 .vsources option {
-    color: #000;
+	color: $player-bg-color;
 }
 
 .turboplayer_controls_wrapper {
-    position: absolute;
-    box-shadow: 0 0 20px black;
-    top: 0;
-    opacity: 0;
-    height: 26px;
-    width: 100%;
-    background-color: #000;
-    @include transition(opacity .25s ease-in-out);
+	position: absolute;
+	top: 0;
+	opacity: 0;
+	width: 100%;
+	background-color: $player-bg-color;
+	@include transition(opacity .25s ease-in-out);
 }
 
 .turboplayer_controls_fadeIn {
-    opacity: 1;
+	opacity: 1;
+}
+
+// sized rules that require a media query with breakpoint
+@include min-width-media($breakpoint) {
+	#player_embed {
+		margin-right: spx(300);
+		min-height: spx(480);
+	}
+
+	#toggleview {
+		width: spx(100);
+
+		.button {
+			height: spx(130);
+			width: spx(40);
+			margin: spx(-65) auto;
+			font: bold spx(32) Verdana, sans-serif;
+			line-height: spx(130);
+			border-radius: spx(5) 0 0 spx(5);
+			@include box-shadow(0 0 spx(20) black);
+		}
+	}
+
+	#chat_embed {
+		width: spx(300);
+		min-height: spx(480);
+	}
+
+	.vsources {
+		font-size: spx(15);
+		top: spx(2);
+		left: spx(50);
+	}
+
+	.vsources_span {
+		font-size: spx(15);
+		top: spx(2);
+		left: spx(2);
+	}
+
+	.turboplayer_controls_wrapper {
+		@include box-shadow(0 0 spx(20) black);
+		height: spx(24);
+	}
 }

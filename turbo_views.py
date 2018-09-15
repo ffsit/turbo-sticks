@@ -280,8 +280,10 @@ chat_view = create_basic_view(__chat_view, 'chat')
 def __headless_stream_view(post_vars, csrf_clerk, db, session, user):
 	page_data = basic_page_data('stream-headless')
 	page_data['chat_uri'] = turbo_views['chat-headless'].uri
+	page_data['default_embed'] = get_default_embed(stream_sources)
+	page_data['video_sources'] = generate_video_sources(stream_sources);
 	status = '200 OK'
-	response_body = templates.render('stream_headless', page_data)
+	response_body = templates.render('stream_embed', page_data)
 	response_headers = basic_response_header(response_body)
 	return response_body, response_headers, status
 headless_stream_view = create_basic_view(__headless_stream_view, 'stream-headless', headless=True)
@@ -298,24 +300,26 @@ stream_view = create_basic_view(__stream_view, 'stream')
 
 def __headless_theatre_view(post_vars, csrf_clerk, db, session, user):
 	page_data = basic_page_data('stream-headless')
-	page_data['chat_uri'] = turbo_views['chat-headless'].uri
 	status = '200 OK'
-	response_body = templates.render('theatre_headless', page_data)
+	given_password = post_vars.get('theatre_password', [''])[0]
+	if(user is not None or given_password == theatre_password):
+		page_data['chat_uri'] = turbo_views['chat-headless'].uri
+		page_data['default_embed'] = get_default_embed(theatre_sources)
+		page_data['video_sources'] = generate_video_sources(theatre_sources);
+		response_body = templates.render('stream_embed', page_data)
+	else:
+		page_data['form_action'] = turbo_views['theatre-headless'].uri
+		response_body = templates.render('theatre_auth', page_data)
 	response_headers = basic_response_header(response_body)
 	return response_body, response_headers, status
-headless_theatre_view = create_basic_view(__headless_theatre_view, 'theatre-headless', headless=True)
+headless_theatre_view = create_basic_view(__headless_theatre_view, 'theatre-headless', False, True)
 
 def __theatre_view(post_vars, csrf_clerk, db, session, user):
 	page_data = basic_page_data('theatre')
 	page_data['nav'] = turbo_nav.generate_html('theatre', user is not None)
 	page_data['theatre_uri'] = turbo_views['theatre-headless'].uri
 	status = '200 OK'
-	given_password = post_vars.get('theatre_password', [''])[0]
-	if(user is not None or given_password == theatre_password):
-		response_body = templates.render('theatre', page_data)
-	else:
-		page_data['form_action'] = turbo_views['theatre'].uri
-		response_body = templates.render('theatre_auth', page_data)
+	response_body = templates.render('theatre', page_data)
 	response_headers = basic_response_header(response_body)
 	return response_body, response_headers, status
 theatre_view = create_basic_view(__theatre_view, 'theatre', False)

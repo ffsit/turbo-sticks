@@ -32,5 +32,21 @@ flush_interval = 60 # Flush expired tokens every minute
 session_max_age = 60*60*24*7 # 1 Week
 cookie_scope = 'turbo.chat' # turbo.chat including all subdomains
 
+# Stream
+stream_sources = [
+	{
+		'embed_type': 'html',
+		'embed': '<iframe id="player-frame" frameborder="0" scrolling="no" src="https://player.twitch.tv/?channel=ffstv" allowfullscreen></iframe>',
+		'label': 'Twitch'
+	}
+]
+
 # Theatre
 theatre_password = 'ttturbo' # Used to authenticate non turbo viewers
+theatre_sources = [
+	{
+		'embed_type': 'clappr-flv',
+		'embed': 'https://stream.nulani.net/live?app=nulani&stream=stream',
+		'label': 'Test'
+	}
+]

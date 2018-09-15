@@ -51,3 +51,14 @@ def generate_json_response(data):
 		('Content-Length', str(len(response_body)))
 	];
 	return response_body, response_headers, '200 OK';
+
+def get_default_embed(sources):
+	if(len(sources) > 0 and sources[0]['embed_type'] == 'html'):
+		return sources[0]['embed']
+	return '' 
+
+def generate_video_sources(sources):
+	if(len(sources) > 0):
+		sources[0]['selected'] = True
+		return json.dumps(sources)
+	return '[]'

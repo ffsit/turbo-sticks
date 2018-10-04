@@ -1,3 +1,4 @@
+# Actual configuration needs to be named turbo_config.py
 # Config
 web_uri = 'https://sticks.turbo.chat'
 page_title = 'Turbo Sticks Account Management'

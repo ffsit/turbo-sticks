@@ -12,8 +12,8 @@ class nav_item:
 		self.hidden_when_logged_out = hidden_when_logged_out
 		self.hidden_when_logged_in = hidden_when_logged_in
 
-def generate_html(page_name, logged_in=False):
-	result = '\t<ul id="nav" class="no-js" aria-haspopup="true">\n\t\t<li class="arrow down"><span></span></li>\n'
+def generate_html(page_name, logged_in=False, expanded=False):
+	result = '\t<ul id="nav" class="no-js' + (' hover' if expanded else '') + '" aria-haspopup="true">\n\t\t<li class="arrow down"><span></span></li>\n'
 	for name in this.items:
 		item = this.items[name]
 		view = item.turbo_view

@@ -244,7 +244,7 @@ def __account_view(post_vars, csrf_clerk, db, session, user):
 			# silently failing on an invalid token is fine here
 			user.reset_app_password()
 	status = '200 OK'
-	page_data['nav'] = turbo_nav.generate_html('account', user is not None)
+	page_data['nav'] = turbo_nav.generate_html('account', user is not None, True)
 	page_data['form_action'] = turbo_views['account'].uri
 	page_data['username'] = user.username
 	page_data['avatar_src'] = user.account.get('avatar', '')

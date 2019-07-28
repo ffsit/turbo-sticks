@@ -4,3 +4,4 @@
 *.directory
 /turbo_config.py
 *.pyc
+/setup/js/local_compile.sh

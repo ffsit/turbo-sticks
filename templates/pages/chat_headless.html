@@ -32,20 +32,13 @@
 				<div id="slide_message" class="hidden"></div>
 				<div id="slide_login" class="slide_page">
 					<h1>Login</h1>
-					<div>Please read &amp; follow the <a href="%%(rules_uri)s" target="_blank">chat rules</a>.</div>
+					<div>Please read &amp; follow the <a href="%%(rules_uri)s" target="_blank">chat rules</a>. <p \>
+                                             To login to chat, you need to be logged into TURBOSticks.</div>
 					<img class="spinner hidden" src="https://turbo.chat/content/img/spinner%%(rand_spinner)s.gif" alt="One moment">
 					<form id="vgairc_loginform" method="post" action="index.php">
-						<label for="nickname">Name:</label>
-						<input type="text" id="nickname" maxlength="32" value="%%(username)s" placeholder="Nickname"/>
-						<label for="password">Password:</label>
-						<input type="password" id="password" maxlength="128" value=%%(password)s placeholder="Password"/>
-						<label for="channel">Channel:</label>
-						<input type="text" id="channel" maxlength="128" list="channels" placeholder="#ffstv"/>
-							<datalist id="channels">
-								<option value="#ffstv">
-								<option value="#spoilers">
-								<option value="#support">
-							</datalist>
+						<input type="hidden" id="nickname" maxlength="32" value="%%(username)s" placeholder="Nickname"/>
+						<input type="hidden" id="password" maxlength="128" value="%%(password)s" placeholder="Password"/>
+						<input type="hidden" id="channel" maxlength="128" value="#ffstv" placeholder="#ffstv"/>
 						<input id="Login" type="submit" value="Login"/>
 					</form>
 				</div>

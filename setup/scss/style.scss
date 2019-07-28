@@ -339,6 +339,12 @@ input {
 	}
 }
 
+p.help {
+	position: absolute;
+	padding: 0;
+	margin: 0;
+}
+
 #notification {
 	display: inline-block;
 	visibility: hidden;
@@ -417,6 +423,13 @@ input {
 		text-align: justify;
 		padding: (line-height() - font-size())/2 0;
 		margin: spx(5) 0;
+	}
+	
+	p.help {
+		left: line-height();
+		bottom: line-height();
+		right: line-height();
+	        max-width: spx(5*$reference-height/4);
 	}
 
 	ul {

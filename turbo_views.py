@@ -265,7 +265,7 @@ def __headless_chat_view(post_vars, csrf_clerk, db, session, user):
 	response_body = templates.render('chat_headless', page_data)
 	response_headers = basic_response_header(response_body)
 	return response_body, response_headers, status
-headless_chat_view = create_basic_view(__headless_chat_view, 'chat-headless', headless=True)
+headless_chat_view = create_basic_view(__headless_chat_view, 'chat-headless', False, True)
 
 def __chat_view(post_vars, csrf_clerk, db, session, user):
 	page_data = basic_page_data('chat')
@@ -309,6 +309,7 @@ def __headless_theatre_view(post_vars, csrf_clerk, db, session, user):
 		response_body = templates.render('stream_embed', page_data)
 	else:
 		page_data['form_action'] = turbo_views['theatre-headless'].uri
+		page_data['login_uri'] = turbo_views['login'].uri
 		response_body = templates.render('theatre_auth', page_data)
 	response_headers = basic_response_header(response_body)
 	return response_body, response_headers, status

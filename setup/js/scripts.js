@@ -199,7 +199,7 @@
 							autoPlay: autoplay,
 							mimeType: 'video/flv',
 							plugins: [
-								FLVJSPlayback
+								FLVPlayback
 							],
 							playback: {
 								flvjsConfig: {

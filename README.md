@@ -38,11 +38,12 @@ Setup
 * Configure nginx to serve /static and forward wsgi on `/<app path>` and `/<api path>`
 * Setup Postgres database and user for use with turbo sticks. Run `initdb.sql` to initialize tables
 * Setup an App in Mastadon with read:accounts privileges
-* Adjust settings in `turbo_config.py`
+* Adjust settings in `turbo_config.example.py` and rename to `turbo_config.py`
 * Run turbo_bridge.py using uWSGI
 
 Change Log
 -----------
-
+#### 1.0.0
+Proper Release after some cleanup.
 #### 0.9.0
 Beta Release.

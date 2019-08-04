@@ -30,7 +30,7 @@ $a-tags-hover: 'a:active, a:hover';
 @mixin user-color-map($roles, $colors) {
 	@for $i from 1 through length($colors) {
 		@each $role in $roles {
-			.user-entry.nickColor#{$i} .role.#{role} .allowColor {
+			.user-entry.nickColor#{$i} .role.#{$role} .allowColor {
 				color: nth($colors, $i);
 			}
 		}

@@ -30,13 +30,13 @@ $shadow-color: rgba(0, 0, 0, 0.25);
 $gradient-accent: rgba(0, 0, 0, 0.15);
 $accent-color: #2f70a1;
 
- // use functions for global sizes, so they get computed fresh
+// use functions for global sizes, so they get computed fresh
 @function font-size() { @return spx(15); }
 @function line-height() { @return spx(22); }
 @function font-size-big() { @return spx(27); }
 @function line-height-big() { @return spx(35); }
 
-$a-tags: 'a,, a:link, a:active, a:hover, a:visited';
+$a-tags: 'a, a:link, a:active, a:hover, a:visited';
 $a-tags-hover: 'a:active, a:hover';
 
 // IMPORTS

@@ -76,8 +76,12 @@
 
 @mixin flex-shrink($weight) {
 	@include prefix((flex-shrink: $weight), (webkit moz ms));
-} 
+}
 
 @mixin flex-basis($size) {
 	@include prefix((flex-basis: $size), (webkit moz ms));
-} 
+}
+
+@mixin user-select($property) {
+	@include prefix((user-select: $property), (webkit moz ms));
+}

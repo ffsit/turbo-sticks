@@ -3,7 +3,7 @@ $reference-height: 700;
 $responsive-multiplier: 100vmin/$reference-height;
 $fixed-multiplier: $breakpoint/$reference-height;
 $spx-multiplier: $responsive-multiplier;
-/* returns a size relative to $spx-multiplier */
+// returns a size relative to $spx-multiplier
 @function spx($pxsize) {
 	@return $pxsize*$spx-multiplier;
 }

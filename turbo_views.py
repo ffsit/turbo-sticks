@@ -352,10 +352,16 @@ turbo_views['rules'] = turbo_view('Rules', '/rules', rules_view)
 def set_nav_item(name, hidden_when_logged_out=False, hidden_when_logged_in=False):
 	turbo_nav.items[name] = turbo_nav.nav_item(turbo_views[name], hidden_when_logged_out, hidden_when_logged_in)
 
+def set_nav_external_item(name, display_name, uri, hidden_when_logged_out=False, hidden_when_logged_in=False):
+	dummy_view = turbo_view(display_name, uri)
+	turbo_nav.items[name] = turbo_nav.nav_item(dummy_view, hidden_when_logged_out, hidden_when_logged_in)	
+
 set_nav_item('login', False, True)
 set_nav_item('account', True)
 set_nav_item('chat', True)
 set_nav_item('stream', True)
 set_nav_item('theatre')
+set_nav_external_item('toot', 'Turbo Toot', 'https://toot.turbo.chat')
+set_nav_external_item('discourse', 'Turbo Discourse', 'https://discourse.turbo.chat')
 set_nav_item('rules')
 set_nav_item('logout', True)

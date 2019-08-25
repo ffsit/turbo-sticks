@@ -398,8 +398,8 @@ p.help {
 }
 
 .shown {
-	opacity: 1;
-	visibility: visible;
+	opacity: 1 !important;
+	visibility: visible !important;
 }
 
 // sized rules that require a media query with breakpoint

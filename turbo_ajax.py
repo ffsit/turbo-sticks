@@ -26,8 +26,8 @@ def create_api_call(func, needs_auth=True):
 				csrf_token = post_vars.get('csrf_token', [''])[0]
 				if(not csrf_clerk.validate(session, csrf_token)):
 					return generate_json_response({'error': 'CSRF token verification failed.'})
-		 		user = turbo_user.User.create(account, db)
-		 		return generate_json_response(func(post_vars, db, user))
+				user = turbo_user.User.create(account, db)
+				return generate_json_response(func(post_vars, db, user))
 
 			except turbo_db.DBWarning as warning:
 				# Database Warning, can continue normally

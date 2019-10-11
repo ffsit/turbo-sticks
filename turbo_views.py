@@ -75,15 +75,15 @@ def create_view(func, nav='error', headless=False):
 # func is a function of the form func(post_vars, csrf_clerk, db, session, user) -> dict
 def create_basic_view(func, nav='error', needs_auth=True, headless=False):
 	def basic_view(env, csrf_clerk, db):
- 		post_vars = retrieve_post_vars(env)
+		post_vars = retrieve_post_vars(env)
 		session = turbo_session.get_session(env)
 		account = turbo_session.retrieve_oauth_account(session, db)
 
- 		# Start OAuth
- 		if(account is None and needs_auth):
- 			# Show Auth Error in headless mode
- 			if(headless):
- 				return error_view('Auth Error', 'You are not logged in.', nav, headless=True)
+		# Start OAuth
+		if(account is None and needs_auth):
+			# Show Auth Error in headless mode
+			if(headless):
+				return error_view('Auth Error', 'You are not logged in.', nav, headless=True)
 
 			redirect_uri = web_uri + base_path + '/callback'
 			oauth = turbo_session.OAuth2Session(client_id, redirect_uri=redirect_uri, scope=scope)

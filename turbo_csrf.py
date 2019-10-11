@@ -5,11 +5,11 @@ from hashlib import sha256
 from turbo_config import app_secret, expiration_interval, flush_interval
 
 def random_token():
-	return binascii.hexlify(os.urandom(64/2))
+	return os.urandom(64//2).hex()
 
 def sign_token(csrf_token, time_signature, session_token):
 	token = csrf_token[:64]
-	return token + sha256(token + str(time_signature) + session_token + app_secret).hexdigest()
+	return token + sha256((token + str(time_signature) + session_token + app_secret).encode('utf-8')).hexdigest()
 
 class TokenClerk:
 	def __init__(self):

@@ -1,26 +1,27 @@
 import sys
 import traceback
 import json
-from cgi import parse_qs, escape
-from Cookie import SimpleCookie
+import http
+from html import escape
+from urllib import parse
 from turbo_config import page_title, base_path, debug_mode
 
 # General Helpers
 def print_exception(title, exception):
 	if(debug_mode):
 		exc_type, exc_value, exc_traceback = sys.exc_info()
-		print '========================================'
-		print title
-		print exception
+		print('========================================')
+		print(title)
+		print(exception)
 		traceback.print_tb(exc_traceback)
-		print '========================================'
+		print('========================================')
 
 def sub_title(sub_title, title=page_title):
 	return sub_title + ' - ' + title
 
 # Web Server Helpers
 def retrieve_get_vars(env):
-	return parse_qs(env['QUERY_STRING'])
+	return parse.parse_qs(env['QUERY_STRING'], encoding='utf-8')
 
 def retrieve_post_vars(env):
 	try:
@@ -28,10 +29,10 @@ def retrieve_post_vars(env):
 	except (ValueError):
 		request_body_size = 0;
 	request_body = env['wsgi.input'].read(request_body_size)
-	return parse_qs(request_body)
+	return parse.parse_qs(request_body.decode('utf-8'))
 
 def retrieve_cookies(env):
-	cookies = SimpleCookie()
+	cookies = http.cookies.SimpleCookie()
 	cookies.load(env.get('HTTP_COOKIE',''))
 	return cookies
 
@@ -45,7 +46,7 @@ def basic_response_header(response_body, send_length=True):
 		return [('Content-Type', 'text/html')]
 
 def generate_json_response(data):
-	response_body = json.dumps(data)
+	response_body = json.dumps(data).encode('utf-8')
 	response_headers = [
 		('Content-Type', 'application/json'),
 		('Content-Length', str(len(response_body)))

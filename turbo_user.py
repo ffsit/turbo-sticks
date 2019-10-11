@@ -9,15 +9,15 @@ def generate_app_password():
 	# Also its length of 64 makes sure each character is hit evenly
 	alphabet = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ123456789*!-.+_'
 	seed = os.urandom(16)
-	return ''.join(alphabet[ord(char) % len(alphabet)] for char in seed)
+	return ''.join(alphabet[byte % len(alphabet)] for byte in seed)
 
 def encrypt(plaintext):
 	cipher = AES.new(app_secret)
-	return cipher.encrypt(plaintext).encode('hex')
+	return cipher.encrypt(plaintext.encode('utf-8')).hex()
 
 def decrypt(ciphertext):
 	cipher = AES.new(app_secret)
-	return cipher.decrypt(ciphertext.decode('hex'))
+	return cipher.decrypt(bytes.fromhex(ciphertext)).decode('utf-8')
 
 # Begin class User
 class User:
@@ -27,7 +27,7 @@ class User:
 
 		self.db = db
 		self.account = account
-		self.mastodon_id = account.get('id', 0)
+		self.mastodon_id = int(account.get('id', '0'))
 		self.username = account.get('username', '')
 		self.uid = User.get_user_id(self.mastodon_id, self.db)
 		if(self.uid > 0):
@@ -83,7 +83,7 @@ class User:
 			self.app_password_plain = generate_app_password()
 			self.username = self.username
 			self.app_password = encrypt(self.app_password_plain)
-			self.app_password_hash = md5(self.app_password_plain).hexdigest()
+			self.app_password_hash = md5(self.app_password_plain.encode('utf-8')).hexdigest()
 
 			with self.db:
 				with self.db.cursor() as cur:
@@ -115,7 +115,7 @@ class User:
 		if(self.db is not None and self.uid > 0):
 			self.app_password_plain = generate_app_password()
 			self.app_password = encrypt(self.app_password_plain)
-			self.app_password_hash = md5(self.app_password_plain).hexdigest()
+			self.app_password_hash = md5(self.app_password_plain.encode('utf-8')).hexdigest()
 
 			with self.db:
 				with self.db.cursor() as cur:

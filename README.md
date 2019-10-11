@@ -8,7 +8,7 @@ This authentication bridge authenticates against an OAuth 2.0 provider to presen
 NOTES
 -----------
 
-* This web application is being run using uwsgi on Python 2.7 and utilizes PostgreSQL as its database backend.
+* This web application utilizes uwsgi with Python 3.5+ and uses PostgreSQL as its database backend.
 * The static content will have to be served using nginx or another HTTP server of your liking, preferably with builtin WSGI support so uWSGI can talk to the proxy using the WSGI protocol, rather than the HTTP protocol.
 * The web application may currently not be thread safe, so it is recommended to run it using a single uWSGI worker.
 
@@ -18,7 +18,7 @@ Requirements
 For production use:
 * A HTTP server with WSGI support (e.g. nginx)
 * uWSGI
-* Python 2.7
+* Python 3.5+
   * oauthlib
   * requests
   * requests_oauthlib
@@ -40,9 +40,12 @@ Setup
 * Setup an App in Mastadon with read:accounts privileges
 * Adjust settings in `turbo_config.example.py` and rename to `turbo_config.py`
 * Run turbo_bridge.py using uWSGI
+* (optional) Setup cronjob to run `turbo_cron.py` daily
 
 Change Log
 -----------
+#### 1.1.0
+Ported turbo-sticks to Python 3.5+ from 2.7
 #### 1.0.0
 Proper Release after some cleanup.
 #### 0.9.0

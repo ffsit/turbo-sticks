@@ -1,5 +1,4 @@
 import os
-import binascii
 import json
 from time import time
 from requests_oauthlib import OAuth2Session
@@ -12,7 +11,7 @@ def create_session(oauth_token, db):
 	if(db is not None):
 		with db:
 			with db.cursor() as cur:
-				session_token = binascii.hexlify(os.urandom(128/2))
+				session_token = os.urandom(128//2).hex()
 				sql = """
 						INSERT INTO sessions
 						(
@@ -49,7 +48,6 @@ def delete_session(session_token, db):
 	if(db is not None and session_token is not None):
 		with db:
 			with db.cursor() as cur:
-				session_token = binascii.hexlify(os.urandom(128/2))
 				sql = """
 						DELETE
 						  FROM sessions
@@ -110,9 +108,9 @@ def retrieve_oauth_account(session, db):
 		if(token is not None):
 			refresh_token_if_necessary(token)
 			oauth = OAuth2Session(client_id, token=token)
-			account = json.loads(oauth.get(account_url).content)
+			account = json.loads(oauth.get(account_url).text)
 			# Don't authenticate moved accounts, federated accounts or bots
-			if(account.get('id', 0) > 0 and
+			if(int(account.get('id', '0')) > 0 and
 			   account.get('moved', None) is None and
 			   account.get('username','') == account.get('acct','@')):
 				return account

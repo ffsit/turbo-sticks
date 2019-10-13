@@ -30,6 +30,6 @@ class TokenClerk:
 	def validate(self, session_token, csrf_token):
 		self.__flush_if_necessary()
 		if(csrf_token is not None):
-			time_signature = self.tokens.get(csrf_token, 0)
+			time_signature = self.tokens.pop(csrf_token, 0)
 			return (csrf_token == sign_token(csrf_token, time_signature, session_token))
 		return False

@@ -17,7 +17,6 @@ def application(env, start_response):
 	response_body, response_headers, status = error_view(
 		'404 Not Found',
 		'The requested page or resource doesn\'t exist',
-		'error',
 		status='404 Not Found')
 
 	turbo_db.init_db()
@@ -25,8 +24,7 @@ def application(env, start_response):
 	if(turbo_db.db is None):
 		response_body, response_headers, status = error_view(
 			'Database Error',
-			'Database connection failed.',
-			'error')
+			'Database connection failed.')
 
 	elif(path.startswith(api_path)):
 		response_body, response_headers, status = generate_json_response({'error': 'Unknown API call.'})

@@ -75,23 +75,36 @@ def create_view(func, nav='error', headless=False):
 # func is a function of the form func(post_vars, csrf_clerk, db, session, user) -> dict
 def create_basic_view(func, nav='error', needs_auth=True, headless=False):
 	def basic_view(env, csrf_clerk, db):
+		get_vars = retrieve_get_vars(env)
 		post_vars = retrieve_post_vars(env)
 		session = turbo_session.get_session(env)
 		account = turbo_session.retrieve_oauth_account(session, db)
 
 		# Start OAuth
-		if(account is None and needs_auth):
+		cookie_set = int(get_vars.get('cookie_set', [0])[0])
+		# Failed to set cookie, tell user to enable cookies to use this site
+		if(account is None and needs_auth and cookie_set == 1):
+			return error_view('Login Error',
+			                  'Failed to create session. Try to enable cookies for this site.')
+
+		elif(account is None and needs_auth):
 			# Show Auth Error in headless mode
 			if(headless):
 				return error_view('Auth Error', 'You are not logged in.', nav, headless=True)
 
 			redirect_uri = web_uri + base_path + '/callback'
 			oauth = turbo_session.OAuth2Session(client_id, redirect_uri=redirect_uri, scope=scope)
-			authorization_url, state = oauth.authorization_url(authorize_url)
+			authorization_url, state = oauth.authorization_url(authorize_url, turbo_session.generate_state(env, csrf_clerk))
 
 			status = '307 Temporary Redirect'
 			response_body = ''
 			response_headers = [('Location', str(authorization_url))]
+
+		# Redirect to url without cookie_set parameter
+		elif(cookie_set == 1):
+			status = '307 Temporary Redirect'
+			response_body = ''
+			response_headers = [('Location', web_uri + env['PATH_INFO'])]
 
 		# Display View
 		else:
@@ -103,18 +116,24 @@ def create_basic_view(func, nav='error', needs_auth=True, headless=False):
 
 # Sub Site Views
 def error_view(title, detail, nav='error', logged_in=False, status='200 OK', headless=False):
-	page_data = basic_page_data(nav)
-	page_data['error_title'] = title
-	page_data['error_detail'] = detail
-	page_data['nav'] = turbo_nav.generate_html(nav, logged_in)
-	
-	if(headless):
-		response_body = templates.render('error_headless', page_data)
-	else:
-		response_body = templates.render('error', page_data)
+	try:
+		page_data = basic_page_data(nav)
+		page_data['error_title'] = title
+		page_data['error_detail'] = detail
+		page_data['nav'] = turbo_nav.generate_html(nav, logged_in)
+		
+		if(headless):
+			response_body = templates.render('error_headless', page_data)
+		else:
+			response_body = templates.render('error', page_data)
 
-	response_headers = basic_response_header(response_body)
-	return response_body, response_headers, status
+		response_headers = basic_response_header(response_body)
+		return response_body, response_headers, status
+
+	# In case we encounter an error in rendering the error view, we'd like to report it
+	except Exception as error:
+		print_exception('Unexpected Error occured: ', error)
+		return '', '', '500 Internal Server Error'
 
 def __main_view(env, csrf_clerk, db):
 	page_data = basic_page_data('main')
@@ -152,41 +171,12 @@ def __main_view(env, csrf_clerk, db):
 	return response_body, response_headers, status
 main_view = create_view(__main_view, 'main')
 
-def __login_view(env, csrf_clerk, db):
-	page_data = basic_page_data('login')
-	response_body = 'Template Render Error.'
-	response_headers = basic_response_header(response_body)
-	status = '200 OK'
-
-	session = turbo_session.get_session(env)
-	account = turbo_session.retrieve_oauth_account(session, db)
-	get_vars = retrieve_get_vars(env)
-	post_vars = retrieve_post_vars(env)
-
-	# Failed to set cookie, tell user to enable cookies to use this site
-	cookie_set = int(get_vars.get('cookie_set', [0])[0])
-	if(account is None and cookie_set == 1):
-		return error_view('Login Error',
-		                  'Failed to create session. Try to enable cookies for this site.')
-
-	# Couldn't auth based on session. Start fresh OAuth 2.0 handshake
-	elif(account is None):
-		redirect_uri = web_uri + base_path + '/callback'
-		oauth = turbo_session.OAuth2Session(client_id, redirect_uri=redirect_uri, scope=scope)
-		authorization_url, state = oauth.authorization_url(authorize_url)
-
-		status = '307 Temporary Redirect'
-		response_body = ''
-		response_headers = [('Location', str(authorization_url))]
-
-	# Display Account Information
-	else:
-		status = '307 Temporary Redirect'
-		response_body = ''
-		response_headers = [('Location', web_uri + turbo_views['account'].uri)]
-
+def __login_view(post_vars, csrf_clerk, db, session, user):
+	status = '307 Temporary Redirect'
+	response_body = ''
+	response_headers = [('Location', web_uri + turbo_views['account'].uri)]
 	return response_body, response_headers, status
-login_view = create_view(__login_view)
+login_view = create_basic_view(__login_view, 'login')
 
 def __logout_view(env, csrf_clerk, db):
 	page_data = basic_page_data('login')
@@ -207,23 +197,33 @@ def __logout_view(env, csrf_clerk, db):
 logout_view = create_view(__logout_view, 'logout')
 
 def __oauth_callback_view(env, csrf_clerk, db):
+	get_vars = retrieve_get_vars(env)
 	redirect_uri = web_uri + base_path + '/callback'
 	authorization_response = redirect_uri + '?' + env['QUERY_STRING']
 	oauth = turbo_session.OAuth2Session(client_id, redirect_uri=redirect_uri, scope=scope)
+	oauth_state = turbo_session.retrieve_oauth_state(get_vars.get('state', [''])[0])
 	try:
-		token = oauth.fetch_token(token_url, authorization_response=authorization_response, client_secret=client_secret)
-		session_token = turbo_session.create_session(token, db)
+		if oauth_state and csrf_clerk.validate('oauth-authorization', oauth_state[0]):
+			token = oauth.fetch_token(token_url, authorization_response=authorization_response, client_secret=client_secret)
+			session_token = turbo_session.create_session(token, db)
 
-		if(session_token is not None):
-			status = '307 Temporary Redirect'
-			response_body = ''
-			response_headers = [
-				('Set-Cookie', "TB_SESSION=%s; Domain=%s; Max-Age=%s; Path=/; Secure; HttpOnly" % (session_token, cookie_scope, session_max_age)),
-				('Location', web_uri + turbo_views['login'].uri + '?cookie_set=1')
-			]
+			if(session_token is not None):
+				redirect_to = str(oauth_state[1])
+				if redirect_to.startswith('/'):
+					redirect_to = web_uri + redirect_to + '?cookie_set=1'
+
+				status = '307 Temporary Redirect'
+				response_body = ''
+				response_headers = [
+					('Set-Cookie', "TB_SESSION=%s; Domain=%s; Max-Age=%s; Path=/; Secure; HttpOnly" % (session_token, cookie_scope, session_max_age)),
+					('Location', redirect_to)
+				]
+			else:
+				return error_view('Internal Error',
+				                  'Failed to create session.')
 		else:
-			return error_view('Internal Error',
-			                  'Failed to create session.')
+			return error_view('CSRF Verfication failed',
+				              'Failed to authorize account due to a CSRF verfication error, try again.')
 
 	except OAuth2Error as error:
 		# Might indicate a "deny" on granting access to the app
@@ -309,7 +309,7 @@ def __headless_theatre_view(post_vars, csrf_clerk, db, session, user):
 		response_body = templates.render('stream_embed', page_data)
 	else:
 		page_data['form_action'] = turbo_views['theatre-headless'].uri
-		page_data['login_uri'] = turbo_views['login'].uri
+		page_data['login_uri'] = turbo_views['login'].uri + '?redirect_to=' + parse.quote_plus(turbo_views['theatre'].uri)
 		response_body = templates.render('theatre_auth', page_data)
 	response_headers = basic_response_header(response_body)
 	return response_body, response_headers, status

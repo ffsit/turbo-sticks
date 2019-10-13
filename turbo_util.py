@@ -2,9 +2,12 @@ import sys
 import traceback
 import json
 import http
+from Crypto.Cipher import AES
 from html import escape
 from urllib import parse
-from turbo_config import page_title, base_path, debug_mode
+from os import urandom
+
+from turbo_config import page_title, base_path, debug_mode, app_secret
 
 # General Helpers
 def print_exception(title, exception):
@@ -18,6 +21,18 @@ def print_exception(title, exception):
 
 def sub_title(sub_title, title=page_title):
 	return sub_title + ' - ' + title
+
+# Crypto Helpers
+def generate_random_token(length):
+	return urandom(length//2).hex()
+
+def encrypt(plaintext):
+	cipher = AES.new(app_secret)
+	return cipher.encrypt(plaintext.encode('utf-8')).hex()
+
+def decrypt(ciphertext):
+	cipher = AES.new(app_secret)
+	return cipher.decrypt(bytes.fromhex(ciphertext)).decode('utf-8')
 
 # Web Server Helpers
 def retrieve_get_vars(env):

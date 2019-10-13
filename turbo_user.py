@@ -1,23 +1,14 @@
-import os
 from hashlib import md5
-from Crypto.Cipher import AES
 from turbo_config import app_secret
+from turbo_util import encrypt, decrypt, urandom
 
 # Password Helpers
 def generate_app_password():
 	# Chosen alphabet attempts to avoid ambiguous or url unsafe characters
 	# Also its length of 64 makes sure each character is hit evenly
 	alphabet = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ123456789*!-.+_'
-	seed = os.urandom(16)
+	seed = urandom(16)
 	return ''.join(alphabet[byte % len(alphabet)] for byte in seed)
-
-def encrypt(plaintext):
-	cipher = AES.new(app_secret)
-	return cipher.encrypt(plaintext.encode('utf-8')).hex()
-
-def decrypt(ciphertext):
-	cipher = AES.new(app_secret)
-	return cipher.decrypt(bytes.fromhex(ciphertext)).decode('utf-8')
 
 # Begin class User
 class User:

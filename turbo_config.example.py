@@ -27,7 +27,7 @@ db_max_age = 10*60 # Establish a fresh connection every 10 minutes
 
 # CSRF Protection
 expiration_interval = 60*60 # 1 hour
-flush_interval = 60 # Flush expired tokens every minute
+flush_interval = 5*60 # Flush expired tokens every 5 minutes
 
 # Sessions
 session_max_age = 60*60*24*7 # 1 Week

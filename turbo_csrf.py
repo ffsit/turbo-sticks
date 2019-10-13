@@ -1,11 +1,8 @@
-import os
 import binascii
 from time import time
 from hashlib import sha256
 from turbo_config import app_secret, expiration_interval, flush_interval
-
-def random_token():
-	return os.urandom(64//2).hex()
+from turbo_util import generate_random_token
 
 def sign_token(csrf_token, time_signature, session_token):
 	token = csrf_token[:64]
@@ -26,7 +23,7 @@ class TokenClerk:
 	def register(self, session_token):
 		self.__flush_if_necessary()
 		time_signature = time()
-		token = sign_token(random_token(), time_signature, session_token)
+		token = sign_token(generate_random_token(64), time_signature, session_token)
 		self.tokens[token] = time_signature
 		return token
 

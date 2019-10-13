@@ -1,17 +1,16 @@
-import os
 import json
 from time import time
 from requests_oauthlib import OAuth2Session
 
 from turbo_config import session_max_age, client_id, client_secret, account_url, token_url
-from turbo_util import retrieve_cookies
+from turbo_util import generate_random_token, retrieve_cookies, retrieve_get_vars, encrypt, decrypt
 
 # Session Store
 def create_session(oauth_token, db):
 	if(db is not None):
 		with db:
 			with db.cursor() as cur:
-				session_token = os.urandom(128//2).hex()
+				session_token = generate_random_token(128)
 				sql = """
 						INSERT INTO sessions
 						(
@@ -115,3 +114,30 @@ def retrieve_oauth_account(session, db):
 			   account.get('username','') == account.get('acct','@')):
 				return account
 	return None
+
+# generates OAuth state, remembering current location
+def generate_state(env, csrf_clerk):
+	# if redirect_to is set, remember that instead of the current location
+	get_vars = retrieve_get_vars(env)
+	location = get_vars.get('redirect_to', [env['PATH_INFO']])[0]
+
+	csrf_token = csrf_clerk.register('oauth-authorization')
+
+	# oauth state is a list of a csrf token and the location
+	oauth_state = [csrf_token, location]
+
+	# return oauth_state jsonified and encrypted
+	json_state = json.dumps(oauth_state)
+
+	# json needs to be padded with whitespaces to a multiple of 16 for AES encryption
+	extra_length = len(json_state) % 16 
+	if extra_length > 0:
+		json_state = json_state + (' ' * (16 - extra_length))
+
+	return encrypt(json_state)
+
+def retrieve_oauth_state(encrypted_state):
+	try:
+		return json.loads(decrypt(encrypted_state))
+	except ValueError:
+		return None

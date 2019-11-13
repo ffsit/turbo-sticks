@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>%%(title)s</title>
+	<meta name="description" content="%%(description)s">
+	<link rel="stylesheet" href="/static/stream.css">
+</head>
+<body>
+<div id="live">
+	<div id="chat_embed">
+		 <iframe id="chat" src="%%(chat_uri)s" frameborder="0" scrolling="no"></iframe>
+	</div>
+	<div id="player_embed">
+		<div id="player" class="oven"><div id="ovenplayer"></div></div>
+		<div id="toggleview">
+			<div class="button maximize"></div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript" src="/static/ovenplayer/ovenplayer.js"></script>
+<script type="text/javascript" src="/static/scripts.js"></script>
+<script type="text/javascript">
+	sticks.init_video(%%(video_sources)s);
+	window.top.sticks.displayNotification('If you encounter issues with the new player, <a href="%%(legacy_uri)s">click here</a> to get to the old one.', true);
+</script>
+</body>
+</html>

@@ -115,7 +115,7 @@ def create_basic_view(func, nav='error', needs_auth=True, headless=False):
 	return create_view(basic_view, nav, headless);
 
 # Sub Site Views
-def error_view(title, detail, nav='error', logged_in=False, status='200 OK', headless=False):
+def error_view(title, detail, nav='error', status='200 OK', headless=False, logged_in=False):
 	try:
 		page_data = basic_page_data(nav)
 		page_data['error_title'] = title
@@ -299,14 +299,14 @@ def __stream_view(post_vars, csrf_clerk, db, session, user):
 stream_view = create_basic_view(__stream_view, 'stream')
 
 def __headless_theatre_view(post_vars, csrf_clerk, db, session, user):
-	page_data = basic_page_data('stream-headless')
+	page_data = basic_page_data('theatre-headless')
 	status = '200 OK'
 	given_password = post_vars.get('theatre_password', [''])[0]
 	if(user is not None or given_password == theatre_password):
 		page_data['chat_uri'] = turbo_views['chat-headless'].uri
-		page_data['default_embed'] = get_default_embed(theatre_sources)
+		page_data['legacy_uri'] = turbo_views['legacy-theatre'].uri
 		page_data['video_sources'] = generate_video_sources(theatre_sources);
-		response_body = templates.render('stream_embed', page_data)
+		response_body = templates.render('oven_embed', page_data)
 	else:
 		page_data['form_action'] = turbo_views['theatre-headless'].uri
 		page_data['login_uri'] = turbo_views['login'].uri + '?redirect_to=' + parse.quote_plus(turbo_views['theatre'].uri)
@@ -324,6 +324,33 @@ def __theatre_view(post_vars, csrf_clerk, db, session, user):
 	response_headers = basic_response_header(response_body)
 	return response_body, response_headers, status
 theatre_view = create_basic_view(__theatre_view, 'theatre', False)
+
+def __headless_legacy_theatre_view(post_vars, csrf_clerk, db, session, user):
+	page_data = basic_page_data('legacy-theatre-headless')
+	status = '200 OK'
+	given_password = post_vars.get('theatre_password', [''])[0]
+	if(user is not None or given_password == theatre_password):
+		page_data['chat_uri'] = turbo_views['chat-headless'].uri
+		page_data['default_embed'] = get_default_embed(theatre_sources)
+		page_data['video_sources'] = generate_video_sources(theatre_sources);
+		response_body = templates.render('stream_embed', page_data)
+	else:
+		page_data['form_action'] = turbo_views['legacy-theatre-headless'].uri
+		page_data['login_uri'] = turbo_views['login'].uri + '?redirect_to=' + parse.quote_plus(turbo_views['legacy-theatre'].uri)
+		response_body = templates.render('theatre_auth', page_data)
+	response_headers = basic_response_header(response_body)
+	return response_body, response_headers, status
+headless_legacy_theatre_view = create_basic_view(__headless_legacy_theatre_view, 'legacy-theatre-headless', False, True)
+
+def __legacy_theatre_view(post_vars, csrf_clerk, db, session, user):
+	page_data = basic_page_data('legacy-theatre')
+	page_data['nav'] = turbo_nav.generate_html('legacy-theatre', user is not None)
+	page_data['theatre_uri'] = turbo_views['legacy-theatre-headless'].uri
+	status = '200 OK'
+	response_body = templates.render('legacy_theatre', page_data)
+	response_headers = basic_response_header(response_body)
+	return response_body, response_headers, status
+legacy_theatre_view = create_basic_view(__legacy_theatre_view, 'legacy-theatre', False)
 
 def __rules_view(post_vars, csrf_clerk, db, session, user):
 	page_data = basic_page_data('rules')
@@ -346,6 +373,8 @@ turbo_views['stream'] = turbo_view('Turbo Stream', '/stream', stream_view)
 turbo_views['stream-headless'] = turbo_view('Turbo Stream', '/stream-headless', headless_stream_view)
 turbo_views['theatre'] = turbo_view('Movie Night', '/theatre', theatre_view)
 turbo_views['theatre-headless'] = turbo_view('Movie Night', '/theatre-headless', headless_theatre_view)
+turbo_views['legacy-theatre'] = turbo_view('Movie Night (Legacy)', '/legacy-theatre', legacy_theatre_view)
+turbo_views['legacy-theatre-headless'] = turbo_view('Movie Night (Legacy)', '/legacy-theatre-headless', headless_legacy_theatre_view)
 turbo_views['rules'] = turbo_view('Rules', '/rules', rules_view)
 
 # List of nav items

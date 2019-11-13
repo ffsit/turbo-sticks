@@ -46,6 +46,11 @@ stream_sources = [
 theatre_password = 'ttturbo' # Used to authenticate non turbo viewers
 theatre_sources = [
 	{
+		'embed_type': 'oven-webrtc',
+		'embed': 'wss://v-cdn.acra.cloud:3333/app/stream_o',
+		'label': 'Oven Test'
+	},
+	{
 		'embed_type': 'clappr-flv',
 		'embed': 'https://stream.nulani.net/live?app=nulani&stream=stream',
 		'label': 'Test'

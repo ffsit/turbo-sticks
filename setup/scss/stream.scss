@@ -77,6 +77,12 @@ body {
 	width: 100%;
 	background: $player-bg-color;
 	overflow: hidden;
+
+	&.oven {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
 }
 
 #player-frame {
@@ -88,6 +94,7 @@ body {
 
 #toggleview {
 	position: absolute;
+	z-index: 9999;
 	right: 0;
 	transform: translateY(115%);
 	height: 30%;

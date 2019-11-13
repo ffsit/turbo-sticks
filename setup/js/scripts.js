@@ -53,7 +53,7 @@
 		removeClass(main.notification, 'shown');
 	}
 
-	function displayNotifcation(html, forever) {
+	function displayNotification(html, forever) {
 		// Initialize notification
 		if(!main.notification) {
 			main.notification = document.getElementById('notification');
@@ -65,7 +65,6 @@
 			}
 
 			// Hide notification on click outside
-			main.notification.addEventListener('click', preventDefault);
 			document.querySelectorAll('body')[0].addEventListener('click', hideNotifcation);
 		}
 
@@ -105,6 +104,18 @@
 			}
 		}
 
+		// Bubble click event to top window
+		if(window.top != window.self) {
+			document.querySelectorAll('body')[0].addEventListener('click', function() {
+				var event = new MouseEvent('click', {
+					view: window.top,
+					bubbles: true,
+					cancelable: true
+				});
+				window.top.document.querySelectorAll('body')[0].dispatchEvent(event);
+			});
+		}
+
 		// App Password
 		var reset_app_password = document.querySelectorAll('form[name=reset_app_password]')[0];
 		if(reset_app_password) {
@@ -113,7 +124,7 @@
 			app_password.addEventListener('click', function(event) {
 				app_password.select();
 				document.execCommand('copy');
-				displayNotifcation('App-Password copied to clipboard.', false);
+				displayNotification('App-Password copied to clipboard.', false);
 				return preventDefault(event);
 			});
 
@@ -124,10 +135,10 @@
 					if(app_password && !data['error']) {
 						app_password.value = data['app_password'];
 					} else {
-						displayNotifcation('<b>Error:</b> ' + data['error'], true);
+						displayNotification('<b>Error:</b> ' + data['error'], true);
 					}
 				}, function() {
-					displayNotifcation('<b>Error:</b> Connection Error', true)
+					displayNotification('<b>Error:</b> Connection Error', true)
 				});
 
 				return preventDefault(event);
@@ -245,7 +256,7 @@
 
 			toggle.addEventListener('click', minimize_chat);
 
-			// stream source selection
+			// stream source selection (legacy)
 			var controls = document.getElementById('turboplayer_controls_wrapper');
 			var select = document.getElementById('vsources');
 			var player = document.getElementById('player');
@@ -263,8 +274,11 @@
 					select.blur();
 				});
 
-				main.vsrc.map(function(video){
-					select[select.length] = new Option(video.label, select.length, false, video.selected);
+				main.vsrc.map(function(video, index){
+					// only add non-oven-player sources in legacy player
+					if(video.embed_type == 'html' || video.embed_type == 'clappr-flv') {
+						select[select.length] = new Option(video.label, index, false, video.selected);
+					}
 				});
 
 				select.addEventListener('change', function() {
@@ -274,6 +288,26 @@
 				// init first video
 				choose_video_source(0, player, false);
 			}
+
+			// stream source selection (oven-player)
+			var ovenplayer = document.getElementById('ovenplayer');
+
+			if(ovenplayer)
+			{
+				var oven_sources = vsrc.filter(function(video){
+					return video.embed_type.substr(0,5) == 'oven-';
+				}).map(function(video){
+					return {
+						type: video.embed_type.substr(5),
+						file: video.embed,
+						label: video.label
+					};
+				});
+				main.ovenplayer = OvenPlayer.create('ovenplayer', {
+					image: '/static/movienight.png',
+					sources: oven_sources
+				});
+			}
 		}
 	}
 
@@ -282,13 +316,14 @@
 	main.vsrc = null;
 	main.cur_video_source = null;
 	main.clappr = null;
+	main.ovenplayer = null;
 
 	// Public Static Methods
 	main.ajax_post = ajax_post;
 	main.init_video = init_video;
 	main.addClass = addClass;
 	main.removeClass = removeClass;
-	main.displayNotifcation = displayNotifcation;
+	main.displayNotification = displayNotification;
 	main.hideNotifcation = hideNotifcation;
 	main.preventDefault = preventDefault;
 

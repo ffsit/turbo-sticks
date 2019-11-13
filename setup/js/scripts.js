@@ -304,6 +304,7 @@
 					};
 				});
 				main.ovenplayer = OvenPlayer.create('ovenplayer', {
+					autoStart: true,
 					image: '/static/movienight.png',
 					sources: oven_sources
 				});

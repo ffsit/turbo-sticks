@@ -1,4 +1,6 @@
 # Actual configuration needs to be named turbo_config.py
+from types import SimpleNamespace
+
 # Config
 web_uri = 'https://sticks.turbo.chat'
 page_title = 'Turbo Sticks Account Management'
@@ -8,15 +10,34 @@ base_path = ''
 api_path = '/api' # JSON calls, local only for now
 debug_mode = False;
 
-# OAuth 2.0 Setup Vars
-client_id = 'your mastadon apps client id'
-client_secret = 'your mastadon apps client secret'
-scope = ['read:accounts']
+# Mastodon OAuth 2.0 Setup Vars
+mastodon = SimpleNamespace()
+mastodon.client_id = 'your mastodon apps client id'
+mastodon.client_secret = 'your mastodon apps client secret'
+mastodon.scope = ['read:accounts']
 
-# API nodes 
-authorize_url = 'https://toot.turbo.chat/oauth/authorize'
-token_url = 'https://toot.turbo.chat/oauth/token'
-account_url = 'https://toot.turbo.chat/api/v1/accounts/verify_credentials'
+# Mastodon API nodes 
+mastodon.authorize_url = 'https://toot.turbo.chat/oauth/authorize'
+mastodon.token_url = 'https://toot.turbo.chat/oauth/token'
+mastodon.get_account_url = 'https://toot.turbo.chat/api/v1/accounts/verify_credentials'
+
+# Discord OAuth 2.0 Setup Vars
+discord = SimpleNamespace()
+discord.client_id = 'your discord apps client id'
+discord.client_secret = 'your discord apps client secret'
+discord.scope = ['identify','guilds.join']
+
+# Discord Bot (requires CREATE_INSTANT_INVITE|MANAGE_ROLES permissions)
+discord.bot_token = 'your bots access token'
+
+# Discord Server Information (you can use retrieve_discord_info.py to determine them)
+discord.server_id = 'your server/guild id'
+discord.turbo_role_id = 'your turbo role id'
+
+# Discord API nodes
+discord.authorize_url = 'https://discordapp.com/api/oauth2/authorize'
+discord.token_url = 'https://discordapp.com/api/oauth2/token'
+discord.api_endpoint = 'https://discordapp.com/api/v6'
 
 # DB Connection
 db_host = '127.0.0.1'
@@ -49,10 +70,5 @@ theatre_sources = [
 		'embed_type': 'oven-webrtc',
 		'embed': 'wss://v-cdn.acra.cloud:3333/app/stream_o',
 		'label': 'Oven Test'
-	},
-	{
-		'embed_type': 'clappr-flv',
-		'embed': 'https://stream.nulani.net/live?app=nulani&stream=stream',
-		'label': 'Test'
 	}
 ]

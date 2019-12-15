@@ -4,14 +4,20 @@ import json
 import http
 from Crypto.Cipher import AES
 from html import escape
-from urllib import parse
+from urllib.parse import parse_qs, quote_plus, urlencode
 from os import urandom
 
 from turbo_config import page_title, base_path, debug_mode, app_secret
 
 # General Helpers
-def print_exception(title, exception):
-	if(debug_mode):
+def print_info(info, debug_message=True):
+	if(not debug_message or debug_mode):
+		print('========================================')
+		print(info)
+		print('========================================')
+
+def print_exception(title, exception, debug_message=True):
+	if(not debug_message or debug_mode):
 		exc_type, exc_value, exc_traceback = sys.exc_info()
 		print('========================================')
 		print(title)
@@ -27,24 +33,31 @@ def generate_random_token(length):
 	return urandom(length//2).hex()
 
 def encrypt(plaintext):
-	cipher = AES.new(app_secret)
-	return cipher.encrypt(plaintext.encode('utf-8')).hex()
+	iv = urandom(16)
+	key = app_secret.encode('utf-8')[:16]
+	cipher = AES.new(key, AES.MODE_CFB, iv)
+	return cipher.encrypt(plaintext.encode('utf-8')).hex() + iv.hex()
 
 def decrypt(ciphertext):
-	cipher = AES.new(app_secret)
-	return cipher.decrypt(bytes.fromhex(ciphertext)).decode('utf-8')
+	iv = bytes.fromhex(ciphertext[-32:])
+	key = app_secret.encode('utf-8')[:16]
+	cipher = AES.new(key, AES.MODE_CFB, iv)
+	return cipher.decrypt(bytes.fromhex(ciphertext[:-32])).decode('utf-8')
 
 # Web Server Helpers
 def retrieve_get_vars(env):
-	return parse.parse_qs(env['QUERY_STRING'], encoding='utf-8')
+	return parse_qs(env['QUERY_STRING'], encoding='utf-8')
 
-def retrieve_post_vars(env):
+def retrieve_request_body(env):
 	try:
 		request_body_size = int(env.get('CONTENT_LENGTH',0))
 	except (ValueError):
 		request_body_size = 0;
-	request_body = env['wsgi.input'].read(request_body_size)
-	return parse.parse_qs(request_body.decode('utf-8'))
+	return env['wsgi.input'].read(request_body_size)
+
+def retrieve_post_vars(env):
+	request_body = retrieve_request_body(env)
+	return parse_qs(request_body.decode('utf-8'))
 
 def retrieve_cookies(env):
 	cookies = http.cookies.SimpleCookie()
@@ -60,13 +73,13 @@ def basic_response_header(response_body, send_length=True):
 	else:
 		return [('Content-Type', 'text/html')]
 
-def generate_json_response(data):
+def generate_json_response(data, status='200 OK'):
 	response_body = json.dumps(data).encode('utf-8')
 	response_headers = [
 		('Content-Type', 'application/json'),
 		('Content-Length', str(len(response_body)))
 	];
-	return response_body, response_headers, '200 OK';
+	return response_body, response_headers, status;
 
 def get_default_embed(sources):
 	if(len(sources) > 0 and sources[0]['embed_type'] == 'html'):

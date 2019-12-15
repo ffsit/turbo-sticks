@@ -185,40 +185,15 @@
 		}
 	};
 
-	function choose_video_source(index, player, autoplay) {
+	function choose_video_source(index, player) {
 		if(main.vsrc && player && index !== main.cur_video_source) {
 			var video = main.vsrc[index];
 			if(video) {
-				if(main.clappr) {
-					main.clappr.destroy();
-					main.clappr = null;
-				}
 				player.innerHTML = '';
 
 				switch(video.embed_type) {
 					case 'html':
 						player.innerHTML = video.embed;
-						break;
-
-					case 'clappr-flv':
-						main.clappr = new Clappr.Player({
-							source: video.embed,
-							parentId: '#player',
-							poster: '/static/movienight.png',
-							height: '100%',
-							width: '100%',
-							autoPlay: autoplay,
-							mimeType: 'video/flv',
-							plugins: [
-								FLVPlayback
-							],
-							playback: {
-								flvjsConfig: {
-									type: 'flv',
-									isLive: true
-								}
-							}
-						});
 						break;
 				}
 
@@ -276,17 +251,17 @@
 
 				main.vsrc.map(function(video, index){
 					// only add non-oven-player sources in legacy player
-					if(video.embed_type == 'html' || video.embed_type == 'clappr-flv') {
-						select[select.length] = new Option(video.label, index, false, video.selected);
+					if(video.embed_type.substr(0,5) !== 'oven-') {
+						select[select.length] = new Option(video.label, index, false, select.length === 0);
 					}
 				});
 
 				select.addEventListener('change', function() {
-					choose_video_source(parseInt(select.value), player, true);
+					choose_video_source(parseInt(select.value), player);
 				});
 
 				// init first video
-				choose_video_source(0, player, false);
+				choose_video_source(0, player);
 			}
 
 			// stream source selection (oven-player)
@@ -316,7 +291,6 @@
 	main.notification = null;
 	main.vsrc = null;
 	main.cur_video_source = null;
-	main.clappr = null;
 	main.ovenplayer = null;
 
 	// Public Static Methods

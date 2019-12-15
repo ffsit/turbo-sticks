@@ -9,7 +9,7 @@
 %%(nav)s
 	<div id="content">
 		<h1>Account Overview</h1>
-		<img id="avatar" src="%%(avatar_src)s">
+		<div class="avatar"><img src="%%(avatar_src)s"></div>
 		<form name="reset_app_password" action="%%(form_action)s" method="POST">
 			<input name="csrf_token" type="hidden" value="%%(csrf_token)s">
 			<input name="reset_app_password" type="hidden" value="1">
@@ -22,6 +22,15 @@
 				--><input type="submit" value="&#x21bb;" title="Generate a new app-password." class="right rigid"></section>
 			</section>
 		</form>
+		<div class="spacer"></div>
+		<h2>Discord Account Information <a class="button" href="%%(authorization_url)s">Connect</a></h2>
+		<div class="avatar"><img src="%%(discord_avatar_src)s"></div>
+		<section>
+			<label>Username:</label><label class="third">%%(discord_username)s</label>
+		</section>
+		<section>
+			<label>Roles:</label><label class="third">%%(discord_roles)s</label>
+		</section>
 		<p class="help">App-passwords may be used to access the TURBO Chat with an IRC Client. It is currently only used by the TURBO Chat and is filled in automatically within TURBO Sticks.</p>
 	</div>
 </div>

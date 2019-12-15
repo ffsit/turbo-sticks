@@ -1,6 +1,6 @@
 import sys
 from collections import OrderedDict
-from urllib import parse
+from urllib.parse import quote_plus
 
 this = sys.modules[__name__]
 
@@ -26,7 +26,7 @@ def generate_html(page_name, logged_in=False, expanded=False):
 				item_uri = view.uri
 				# Add redirect_to for current page to the login nav-item
 				if name == 'login' and page_item is not None:
-					item_uri = view.uri + '?redirect_to=' + parse.quote_plus(page_item.turbo_view.uri)
+					item_uri = view.uri + '?redirect_to=' + quote_plus(page_item.turbo_view.uri)
 
 				result += '\t\t<li><a href="%s">%s</a></li>\n' % (item_uri, view.display_name)
 	result += '\t\t<li class="arrow up"><span></span></li>\n\t</ul>'

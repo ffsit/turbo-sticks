@@ -296,11 +296,22 @@ input {
 	}
 }
 
-#avatar {
+.avatar {
 	display: inline-block;
 	float: left;
-	background: $outset-color;
-	@include standard-gradient($outset-color);
+	overflow: hidden;
+	background: $accent-color;
+
+	img {
+		background: $outset-color;
+		@include standard-gradient($outset-color);
+		height: 100%;
+		width: 100%;
+	}
+}
+
+.gray {
+	color: #999;
 }
 
 .half {
@@ -400,6 +411,10 @@ p.help {
 .shown {
 	opacity: 1 !important;
 	visibility: visible !important;
+}
+
+.spacer {
+	clear: both;
 }
 
 // sized rules that require a media query with breakpoint
@@ -602,13 +617,17 @@ p.help {
 		padding: line-height();
 	}
 
-	#avatar {
+	.avatar {
 		height: spx(80);
 		width: spx(80);
 		margin: 0 spx(15) spx(15) 0;
 		border: spx(3) solid $accent-color;
 		@include border-radius(spx(6));
 		@include standard-shadow();
+
+		img {
+			@include border-radius(spx(3));
+		}
 	}
 
 	#notification {
@@ -640,5 +659,9 @@ p.help {
 		margin: 0 0 line-height() line-height();
 		@include border-radius(0 0 0 spx(6));
 		@include top-shadow();
+	}
+
+	.spacer {
+		height: 2*line-height();
 	}
 }

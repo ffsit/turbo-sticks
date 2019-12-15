@@ -2,7 +2,7 @@ import json
 from time import time
 from requests_oauthlib import OAuth2Session
 
-from turbo_config import session_max_age, client_id, client_secret, account_url, token_url
+from turbo_config import session_max_age, mastodon
 from turbo_util import generate_random_token, retrieve_cookies, retrieve_get_vars, encrypt, decrypt
 
 # Session Store
@@ -87,12 +87,12 @@ def retrieve_token_from_session(session_token, db):
 def refresh_token_if_necessary(token):
 	if(token and int(token.get('expires_in', 0)) < 0):
 		# Token needs to refreshed
-		client = OAuth2Session(client_id, token=token)
+		client = OAuth2Session(mastodon.client_id, token=token)
 		extra = {
-			'client_id': client_id,
-			'client_secret': client_secret
+			'client_id': mastodon.client_id,
+			'client_secret': mastodon.client_secret
 		}
-		client.refresh_token(token_url, **extra)
+		client.refresh_token(mastodon.token_url, **extra)
 
 def get_session(env):
 	cookies = retrieve_cookies(env)
@@ -106,8 +106,8 @@ def retrieve_oauth_account(session, db):
 		token = retrieve_token_from_session(session, db)
 		if(token is not None):
 			refresh_token_if_necessary(token)
-			oauth = OAuth2Session(client_id, token=token)
-			account = json.loads(oauth.get(account_url).text)
+			oauth = OAuth2Session(mastodon.client_id, token=token)
+			account = json.loads(oauth.get(mastodon.get_account_url).text)
 			# Don't authenticate moved accounts, federated accounts or bots
 			if(int(account.get('id', '0')) > 0 and
 			   account.get('moved', None) is None and
@@ -127,14 +127,7 @@ def generate_state(env, csrf_clerk):
 	oauth_state = [csrf_token, location]
 
 	# return oauth_state jsonified and encrypted
-	json_state = json.dumps(oauth_state)
-
-	# json needs to be padded with whitespaces to a multiple of 16 for AES encryption
-	extra_length = len(json_state) % 16 
-	if extra_length > 0:
-		json_state = json_state + (' ' * (16 - extra_length))
-
-	return encrypt(json_state)
+	return encrypt(json.dumps(oauth_state))
 
 def retrieve_oauth_state(encrypted_state):
 	try:

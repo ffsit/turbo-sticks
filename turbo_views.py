@@ -6,6 +6,7 @@ import turbo_session
 import turbo_user
 import turbo_templates as templates
 import turbo_nav
+import turbo_discord
 from turbo_db import DBWarning, DBError
 from turbo_config import *
 from turbo_util import *
@@ -53,7 +54,7 @@ def create_view(func, nav='error', headless=False):
 			print_exception('Database Error occured: ', error)
 			return error_view('Database Error',
 			                  'A database error has occured.',
-			                  nav, status, headless)
+			                  nav, '500 Internal Server Error', headless)
 		except OAuth2Error as error:
 			# OAuth 2.0 Error
 			print_exception('OAuth 2.0 Error occured: ', error)
@@ -62,17 +63,17 @@ def create_view(func, nav='error', headless=False):
 			                  nav, status, headless)
 		except Exception as error:
 			# Unknown Exception
-			print_exception('Unexpected Error occured: ', error)
+			print_exception('Unexpected Error occured: ', error, False)
 			return error_view('Unknown Error',
 			                  'An unexpected error has occured.',
-			                  nav, status, headless)
+			                  nav, '500 Internal Server Error', headless)
 		else:
 			# Normal function return without errors
 			return response_body, response_headers, status
 	return view
 
 # Basic Views that use default login/logout behaviour and only require post_vars
-# func is a function of the form func(post_vars, csrf_clerk, db, session, user) -> dict
+# func is a function of the form func(env, get_vars, post_vars, csrf_clerk, db, session, user) -> body, response_headers, status
 def create_basic_view(func, nav='error', needs_auth=True, headless=False):
 	def basic_view(env, csrf_clerk, db):
 		get_vars = retrieve_get_vars(env)
@@ -93,8 +94,8 @@ def create_basic_view(func, nav='error', needs_auth=True, headless=False):
 				return error_view('Auth Error', 'You are not logged in.', nav, headless=True)
 
 			redirect_uri = web_uri + base_path + '/callback'
-			oauth = turbo_session.OAuth2Session(client_id, redirect_uri=redirect_uri, scope=scope)
-			authorization_url, state = oauth.authorization_url(authorize_url, turbo_session.generate_state(env, csrf_clerk))
+			oauth = turbo_session.OAuth2Session(mastodon.client_id, redirect_uri=redirect_uri, scope=mastodon.scope)
+			authorization_url, state = oauth.authorization_url(mastodon.authorize_url, turbo_session.generate_state(env, csrf_clerk))
 
 			status = '307 Temporary Redirect'
 			response_body = ''
@@ -109,7 +110,7 @@ def create_basic_view(func, nav='error', needs_auth=True, headless=False):
 		# Display View
 		else:
 			user = turbo_user.User.create(account, db)
-			response_body, response_headers, status = func(post_vars, csrf_clerk, db, session, user)
+			response_body, response_headers, status = func(env, get_vars, post_vars, csrf_clerk, db, session, user)
 
 		return response_body, response_headers, status
 	return create_view(basic_view, nav, headless);
@@ -132,7 +133,7 @@ def error_view(title, detail, nav='error', status='200 OK', headless=False, logg
 
 	# In case we encounter an error in rendering the error view, we'd like to report it
 	except Exception as error:
-		print_exception('Unexpected Error occured: ', error)
+		print_exception('Unexpected Error occured: ', error, False)
 		return '', '', '500 Internal Server Error'
 
 def __main_view(env, csrf_clerk, db):
@@ -149,8 +150,8 @@ def __main_view(env, csrf_clerk, db):
 	if(account is None):
 		if(session is not None):
 			redirect_uri = web_uri + base_path + '/callback'
-			oauth = turbo_session.OAuth2Session(client_id, redirect_uri=redirect_uri, scope=scope)
-			authorization_url, state = oauth.authorization_url(authorize_url)
+			oauth = turbo_session.OAuth2Session(mastodon.client_id, redirect_uri=redirect_uri, scope=mastodon.scope)
+			authorization_url, state = oauth.authorization_url(mastodon.authorize_url, turbo_session.generate_state(env, csrf_clerk))
 
 			status = '307 Temporary Redirect'
 			response_body = ''
@@ -171,7 +172,7 @@ def __main_view(env, csrf_clerk, db):
 	return response_body, response_headers, status
 main_view = create_view(__main_view, 'main')
 
-def __login_view(post_vars, csrf_clerk, db, session, user):
+def __login_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
 	status = '307 Temporary Redirect'
 	response_body = ''
 	response_headers = [('Location', web_uri + turbo_views['account'].uri)]
@@ -200,11 +201,11 @@ def __oauth_callback_view(env, csrf_clerk, db):
 	get_vars = retrieve_get_vars(env)
 	redirect_uri = web_uri + base_path + '/callback'
 	authorization_response = redirect_uri + '?' + env['QUERY_STRING']
-	oauth = turbo_session.OAuth2Session(client_id, redirect_uri=redirect_uri, scope=scope)
-	oauth_state = turbo_session.retrieve_oauth_state(get_vars.get('state', [''])[0])
 	try:
+		oauth = turbo_session.OAuth2Session(mastodon.client_id, redirect_uri=redirect_uri, scope=mastodon.scope)
+		oauth_state = turbo_session.retrieve_oauth_state(get_vars.get('state', [''])[0])
 		if oauth_state and csrf_clerk.validate('oauth-authorization', oauth_state[0]):
-			token = oauth.fetch_token(token_url, authorization_response=authorization_response, client_secret=client_secret)
+			token = oauth.fetch_token(mastodon.token_url, authorization_response=authorization_response, client_secret=mastodon.client_secret)
 			session_token = turbo_session.create_session(token, db)
 
 			if(session_token is not None):
@@ -235,7 +236,51 @@ def __oauth_callback_view(env, csrf_clerk, db):
 		return response_body, response_headers, status
 oauth_callback_view = create_view(__oauth_callback_view)
 
-def __account_view(post_vars, csrf_clerk, db, session, user):
+def __discord_callback_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
+	page_data = basic_page_data('discord-callback')
+	redirect_uri = web_uri + base_path + '/discord-callback'
+	authorization_response = redirect_uri + '?' + env['QUERY_STRING']
+	discord_user_url = discord.api_endpoint + '/users/@me'
+	try:
+		oauth = turbo_session.OAuth2Session(discord.client_id, redirect_uri=redirect_uri, scope=discord.scope)
+		oauth_state = turbo_session.retrieve_oauth_state(get_vars.get('state', [''])[0])
+		if oauth_state and csrf_clerk.validate('oauth-authorization', oauth_state[0]):
+			token = oauth.fetch_token(discord.token_url, authorization_response=authorization_response, client_secret=discord.client_secret)
+			discord_user = json.loads(oauth.get(discord_user_url).text)
+			if(discord_user is not None and discord_user.get('id') is not None):
+				# If people link their discord to another account, the old one should lose its turbo role
+				if(user.discord_id is not None and user.discord_id != int(discord_user['id'])):
+					if(not turbo_discord.remove_turbo_role(user.discord_id)):
+						return error_view('Unexpected error',
+						                  'Failed to reassign Turbo status to a different Discord account. Please try again.')
+				user.set_discord_id(discord_user['id'])
+				turbo_discord.add_turbo_role(user.discord_id, token)
+
+				redirect_to = str(oauth_state[1])
+				if redirect_to.startswith('/'):
+					redirect_to = web_uri + redirect_to
+
+				status = '307 Temporary Redirect'
+				response_body = ''
+				response_headers = [('Location', redirect_to)]
+			else:
+				return error_view('Unexpected error',
+				                  'Failed to retrieve Discord user details.', logged_in=True)
+		else:
+			return error_view('CSRF Verfication failed',
+				              'Failed to authorize Discord account due to a CSRF verfication error, try again.', logged_in=True)
+
+	except OAuth2Error as error:
+		# Might indicate a "deny" on granting access to the app
+		print_exception('OAuth 2.0 Error occured: ', error)
+		return error_view('OAuth Error',
+		                  'Failed to authorize Discord account, try again.', logged_in=True)
+	else:
+		# Normal function return without errors
+		return response_body, response_headers, status
+discord_callback_view = create_basic_view(__discord_callback_view)
+
+def __account_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
 	page_data = basic_page_data('account')
 	# Reset app_password if requested
 	if(int(post_vars.get('reset_app_password', [0])[0]) == 1):
@@ -250,12 +295,21 @@ def __account_view(post_vars, csrf_clerk, db, session, user):
 	page_data['avatar_src'] = user.account.get('avatar', '')
 	page_data['app_password'] = user.app_password_plain
 	page_data['csrf_token'] = csrf_clerk.register(session)
+	discord_member = turbo_discord.get_member(user.discord_id)
+	discord_user = turbo_discord.get_user(discord_member)
+	redirect_uri = web_uri + base_path + '/discord-callback'
+	oauth = turbo_session.OAuth2Session(discord.client_id, redirect_uri=redirect_uri, scope=discord.scope)
+	authorization_url, state = oauth.authorization_url(discord.authorize_url, turbo_session.generate_state(env, csrf_clerk))
+	page_data['discord_username'] = turbo_discord.render_username(discord_user)
+	page_data['discord_roles'] = turbo_discord.render_roles(discord_member)
+	page_data['discord_avatar_src'] = turbo_discord.get_avatar_url(discord_user)
+	page_data['authorization_url'] = authorization_url
 	response_body = templates.render('account', page_data)
 	response_headers = basic_response_header(response_body)
 	return response_body, response_headers, status
 account_view = create_basic_view(__account_view, 'account')
 
-def __headless_chat_view(post_vars, csrf_clerk, db, session, user):
+def __headless_chat_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
 	page_data = basic_page_data('chat-headless')
 	page_data['rules_uri'] = turbo_views['rules'].uri
 	page_data['rand_spinner'] = str(random.randint(1,5))
@@ -267,7 +321,7 @@ def __headless_chat_view(post_vars, csrf_clerk, db, session, user):
 	return response_body, response_headers, status
 headless_chat_view = create_basic_view(__headless_chat_view, 'chat-headless', False, True)
 
-def __chat_view(post_vars, csrf_clerk, db, session, user):
+def __chat_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
 	page_data = basic_page_data('chat')
 	page_data['nav'] = turbo_nav.generate_html('chat', user is not None)
 	page_data['chat_uri'] = turbo_views['chat-headless'].uri
@@ -277,7 +331,7 @@ def __chat_view(post_vars, csrf_clerk, db, session, user):
 	return response_body, response_headers, status
 chat_view = create_basic_view(__chat_view, 'chat')
 
-def __headless_stream_view(post_vars, csrf_clerk, db, session, user):
+def __headless_stream_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
 	page_data = basic_page_data('stream-headless')
 	page_data['chat_uri'] = turbo_views['chat-headless'].uri
 	page_data['default_embed'] = get_default_embed(stream_sources)
@@ -288,7 +342,7 @@ def __headless_stream_view(post_vars, csrf_clerk, db, session, user):
 	return response_body, response_headers, status
 headless_stream_view = create_basic_view(__headless_stream_view, 'stream-headless', headless=True)
 
-def __stream_view(post_vars, csrf_clerk, db, session, user):
+def __stream_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
 	page_data = basic_page_data('stream')
 	page_data['nav'] = turbo_nav.generate_html('stream', user is not None)
 	page_data['stream_uri'] = turbo_views['stream-headless'].uri
@@ -298,24 +352,23 @@ def __stream_view(post_vars, csrf_clerk, db, session, user):
 	return response_body, response_headers, status
 stream_view = create_basic_view(__stream_view, 'stream')
 
-def __headless_theatre_view(post_vars, csrf_clerk, db, session, user):
+def __headless_theatre_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
 	page_data = basic_page_data('theatre-headless')
 	status = '200 OK'
 	given_password = post_vars.get('theatre_password', [''])[0]
 	if(user is not None or given_password == theatre_password):
 		page_data['chat_uri'] = turbo_views['chat-headless'].uri
-		page_data['legacy_uri'] = turbo_views['legacy-theatre'].uri
 		page_data['video_sources'] = generate_video_sources(theatre_sources);
 		response_body = templates.render('oven_embed', page_data)
 	else:
 		page_data['form_action'] = turbo_views['theatre-headless'].uri
-		page_data['login_uri'] = turbo_views['login'].uri + '?redirect_to=' + parse.quote_plus(turbo_views['theatre'].uri)
+		page_data['login_uri'] = turbo_views['login'].uri + '?redirect_to=' + quote_plus(turbo_views['theatre'].uri)
 		response_body = templates.render('theatre_auth', page_data)
 	response_headers = basic_response_header(response_body)
 	return response_body, response_headers, status
 headless_theatre_view = create_basic_view(__headless_theatre_view, 'theatre-headless', False, True)
 
-def __theatre_view(post_vars, csrf_clerk, db, session, user):
+def __theatre_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
 	page_data = basic_page_data('theatre')
 	page_data['nav'] = turbo_nav.generate_html('theatre', user is not None)
 	page_data['theatre_uri'] = turbo_views['theatre-headless'].uri
@@ -325,34 +378,7 @@ def __theatre_view(post_vars, csrf_clerk, db, session, user):
 	return response_body, response_headers, status
 theatre_view = create_basic_view(__theatre_view, 'theatre', False)
 
-def __headless_legacy_theatre_view(post_vars, csrf_clerk, db, session, user):
-	page_data = basic_page_data('legacy-theatre-headless')
-	status = '200 OK'
-	given_password = post_vars.get('theatre_password', [''])[0]
-	if(user is not None or given_password == theatre_password):
-		page_data['chat_uri'] = turbo_views['chat-headless'].uri
-		page_data['default_embed'] = get_default_embed(theatre_sources)
-		page_data['video_sources'] = generate_video_sources(theatre_sources);
-		response_body = templates.render('stream_embed', page_data)
-	else:
-		page_data['form_action'] = turbo_views['legacy-theatre-headless'].uri
-		page_data['login_uri'] = turbo_views['login'].uri + '?redirect_to=' + parse.quote_plus(turbo_views['legacy-theatre'].uri)
-		response_body = templates.render('theatre_auth', page_data)
-	response_headers = basic_response_header(response_body)
-	return response_body, response_headers, status
-headless_legacy_theatre_view = create_basic_view(__headless_legacy_theatre_view, 'legacy-theatre-headless', False, True)
-
-def __legacy_theatre_view(post_vars, csrf_clerk, db, session, user):
-	page_data = basic_page_data('legacy-theatre')
-	page_data['nav'] = turbo_nav.generate_html('legacy-theatre', user is not None)
-	page_data['theatre_uri'] = turbo_views['legacy-theatre-headless'].uri
-	status = '200 OK'
-	response_body = templates.render('legacy_theatre', page_data)
-	response_headers = basic_response_header(response_body)
-	return response_body, response_headers, status
-legacy_theatre_view = create_basic_view(__legacy_theatre_view, 'legacy-theatre', False)
-
-def __rules_view(post_vars, csrf_clerk, db, session, user):
+def __rules_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
 	page_data = basic_page_data('rules')
 	page_data['nav'] = turbo_nav.generate_html('rules', user is not None)
 	status = '200 OK'
@@ -366,15 +392,14 @@ turbo_views['main'] = turbo_view('Home', '/', main_view)
 turbo_views['account'] = turbo_view('Account Overview', '/account', account_view)
 turbo_views['login'] = turbo_view('Login', '/login', login_view)
 turbo_views['logout'] = turbo_view('Logout', '/logout', logout_view)
-turbo_views['oauth_callback'] = turbo_view('OAuth Callback', '/callback', oauth_callback_view)
+turbo_views['oauth-callback'] = turbo_view('OAuth Callback', '/callback', oauth_callback_view)
+turbo_views['discord-callback'] = turbo_view('Discord Callback', '/discord-callback', discord_callback_view)
 turbo_views['chat-headless'] = turbo_view('Turbo Chat', '/chat-headless', headless_chat_view)
 turbo_views['chat'] = turbo_view('Turbo Chat', '/chat', chat_view)
 turbo_views['stream'] = turbo_view('Turbo Stream', '/stream', stream_view)
 turbo_views['stream-headless'] = turbo_view('Turbo Stream', '/stream-headless', headless_stream_view)
 turbo_views['theatre'] = turbo_view('Movie Night', '/theatre', theatre_view)
 turbo_views['theatre-headless'] = turbo_view('Movie Night', '/theatre-headless', headless_theatre_view)
-turbo_views['legacy-theatre'] = turbo_view('Movie Night (Legacy)', '/legacy-theatre', legacy_theatre_view)
-turbo_views['legacy-theatre-headless'] = turbo_view('Movie Night (Legacy)', '/legacy-theatre-headless', headless_legacy_theatre_view)
 turbo_views['rules'] = turbo_view('Rules', '/rules', rules_view)
 
 # List of nav items

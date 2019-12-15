@@ -19,6 +19,7 @@ class User:
 		self.db = db
 		self.account = account
 		self.mastodon_id = int(account.get('id', '0'))
+		self.discord_id = None
 		self.username = account.get('username', '')
 		self.uid = User.get_user_id(self.mastodon_id, self.db)
 		if(self.uid > 0):
@@ -40,6 +41,7 @@ class User:
 				with self.db.cursor() as cur:
 					sql = """
 							SELECT username,
+							       discord_id,
 							       app_password,
 							       app_password_hash
 							  FROM users
@@ -51,8 +53,9 @@ class User:
 						return
 					self.uid = uid
 					self.username = row[0]
-					self.app_password = row[1]
-					self.app_password_hash = row[2]
+					self.discord_id = row[1]
+					self.app_password = row[2]
+					self.app_password_hash = row[3]
 					self.app_password_plain = decrypt(self.app_password)
 					self.__update_username_if_necessary()
 
@@ -120,6 +123,22 @@ class User:
 						(
 							self.app_password,
 							self.app_password_hash,
+							self.uid
+						))
+
+	def set_discord_id(self, discord_id):
+		if(self.db is not None and self.uid > 0):
+			self.discord_id = discord_id
+			with self.db:
+				with self.db.cursor() as cur:
+					sql = """
+							UPDATE users
+							   SET discord_id = %s
+							 WHERE id = %s"""
+
+					cur.execute(sql,
+						(
+							self.discord_id,
 							self.uid
 						))
 

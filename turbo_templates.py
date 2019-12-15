@@ -1,13 +1,7 @@
 # HTML Template Handling - Read Files in folder templates and import them into the string maps 'pages' and 'blocks'
 import os
-from fnmatch import fnmatch
 
-def files(path, pattern='*'):
-	for entry in os.listdir(path):
-		if fnmatch(entry, pattern):
-			file_path = os.path.join(path, entry)
-			if os.path.isfile(file_path):
-				yield file_path
+from turbo_util import files
 
 file_pattern = '*.html'
 

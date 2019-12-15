@@ -32,7 +32,9 @@ def basic_page_data(name):
 	return {
 		'title': sub_title(display_name),
 		'description': page_description,
-		'main_path': this.turbo_views['main'].uri
+		'main_path': this.turbo_views['main'].uri,
+		'css_version': get_css_version(),
+		'js_version': get_js_version()
 	}
 
 # Create View with standard error handling

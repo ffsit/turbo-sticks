@@ -5,7 +5,8 @@ import http
 from Crypto.Cipher import AES
 from html import escape
 from urllib.parse import parse_qs, quote_plus, urlencode
-from os import urandom
+from os import urandom, listdir, path
+from fnmatch import fnmatch
 
 from turbo_config import page_title, base_path, debug_mode, app_secret
 
@@ -91,3 +92,31 @@ def generate_video_sources(sources):
 		sources[0]['selected'] = True
 		return json.dumps(sources)
 	return '[]'
+
+# File Helpers
+
+def files(source_path, pattern='*'):
+	for entry in listdir(source_path):
+		if fnmatch(entry, pattern):
+			file_path = path.join(source_path, entry)
+			if path.isfile(file_path):
+				yield file_path
+
+css_version = 0
+def get_css_version():
+	global css_version
+	pattern = '*.css'
+	if css_version == 0:
+		for file_path in files('./static/'):
+			css_version = max(css_version, path.getmtime(file_path))
+	return css_version
+
+js_version = 0
+def get_js_version():
+	global js_version
+	pattern = '*.js'
+	if js_version == 0:
+		for file_path in files('./static/'):
+			js_version = max(js_version, path.getmtime(file_path))
+	return js_version
+

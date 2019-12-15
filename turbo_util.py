@@ -107,7 +107,7 @@ def get_css_version():
 	global css_version
 	pattern = '*.css'
 	if css_version == 0:
-		for file_path in files('./static/'):
+		for file_path in files('./static'):
 			css_version = max(css_version, path.getmtime(file_path))
 	return css_version
 
@@ -116,7 +116,7 @@ def get_js_version():
 	global js_version
 	pattern = '*.js'
 	if js_version == 0:
-		for file_path in files('./static/'):
+		for file_path in files('./static'):
 			js_version = max(js_version, path.getmtime(file_path))
 	return js_version
 

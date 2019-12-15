@@ -74,7 +74,7 @@ def add_turbo_role(discord_id, token=None):
 def remove_turbo_role(discord_id):
 	guild_member_url = discord.api_endpoint + '/guilds/' + discord.server_id + '/members/' + str(discord_id)
 
-	# check if member exists
+	# check if member exists, if not report success to prevent lock
 	response = requests.get(guild_member_url, headers=request_header)
 	error = json.loads(response.text)
 	if(response.status_code == 404 or error.get('key', 0) == 10007):
@@ -85,7 +85,7 @@ def remove_turbo_role(discord_id):
 
 	if(response.status_code == 204):
 		return True
-	# if we errored we want to ignore Unknown user errors
+	# if we errored we want to log the error
 	error = json.loads(response.text)
 	print_info('Discord Error: ' + error.get('message'))
 	return False

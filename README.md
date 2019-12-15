@@ -37,7 +37,7 @@ Setup
 * Setup Postgres database and user for use with turbo sticks. Run `initdb.sql` to initialize tables
 * Setup an App in Mastodon with read:accounts privileges
 * Setup an App in Discord with identify and guilds.join scope
-* Create a Discord Bot with `CREATE_INSTANT_INVITE` and `MANAGE_ROLES` permissions
+* Create a Discord Bot and [authorize it](https://discordapp.com/developers/docs/topics/oauth2#bot-authorization-flow) with `CREATE_INSTANT_INVITE` and `MANAGE_ROLES` permissions
 * Adjust settings in `turbo_config.example.py` and rename to `turbo_config.py`
 * Run `retrieve_discord_ids.py` in tools folder to determine your server and role ids
 * Add server id and role id to `turbo_config.py`

@@ -4,7 +4,7 @@
 	<meta charset="utf-8">
 	<title>%%(title)s</title>
 	<meta name="description" content="%%(description)s">
-	<link rel="stylesheet" href="/static/stream.css">
+	<link rel="stylesheet" href="/static/stream.css?v=%%(css_version)s">
 </head>
 <body>
 <div id="live">
@@ -20,7 +20,7 @@
 </div>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script type="text/javascript" src="/static/ovenplayer/ovenplayer.js"></script>
-<script type="text/javascript" src="/static/scripts.js"></script>
+%(footer)s
 <script type="text/javascript">
 	sticks.init_video(%%(video_sources)s);
 </script>

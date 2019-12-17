@@ -47,10 +47,6 @@ def create_view(func, nav='error', headless=False):
 		try:
 			response_body, response_headers, status = func(env, csrf_clerk, db)
 
-		except DBWarning as warning:
-			# Database Warning, can continue normally
-			print_exception('Database Warning occured:', warning)
-			pass
 		except DBError as error:
 			# Database Error
 			print_exception('Database Error occured: ', error)

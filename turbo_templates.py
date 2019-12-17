@@ -1,21 +1,19 @@
 # HTML Template Handling - Read Files in folder templates and import them into the string maps 'pages' and 'blocks'
-import os
-
-from turbo_util import files
+from turbo_util import files, path
 
 file_pattern = '*.html'
 
 blocks = {}
 blocks_path = './templates/blocks'
 for file_path in files(blocks_path, file_pattern):
-	block_name = os.path.splitext(os.path.basename(file_path))[0]
+	block_name = path.splitext(path.basename(file_path))[0]
 	with open(file_path) as f:
 		blocks[block_name] = f.read()
 
 pages = {}
 pages_path = './templates/pages'
 for file_path in files(pages_path, file_pattern):
-	page_name = os.path.splitext(os.path.basename(file_path))[0]
+	page_name = path.splitext(path.basename(file_path))[0]
 	with open(file_path) as f:
 		pages[page_name] = f.read()
 

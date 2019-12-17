@@ -19,11 +19,7 @@ def create_api_call(func):
 	def api_call(env, csrf_clerk, db):
 		try:
 			response, status = func(env, csrf_clerk, db)
-			return generate_json_response(func(env, csrf_clerk, db), status)
-		except DBWarning as warning:
-			# Database Warning, can continue normally
-			print_exception('Database Warning occured:', warning)
-			pass
+			return generate_json_response(response, status)
 		except DBError as error:
 			# Database Error
 			print_exception('Database Error occured: ', error)

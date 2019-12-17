@@ -89,7 +89,6 @@ def get_default_embed(sources):
 
 def generate_video_sources(sources):
 	if(len(sources) > 0):
-		sources[0]['selected'] = True
 		return json.dumps(sources)
 	return '[]'
 
@@ -107,8 +106,8 @@ def get_css_version():
 	global css_version
 	pattern = '*.css'
 	if css_version == 0:
-		for file_path in files('./static'):
-			css_version = max(css_version, path.getmtime(file_path))
+		for file_path in files('./static', pattern):
+			css_version = max(css_version, int(path.getmtime(file_path)))
 	return css_version
 
 js_version = 0
@@ -116,7 +115,7 @@ def get_js_version():
 	global js_version
 	pattern = '*.js'
 	if js_version == 0:
-		for file_path in files('./static'):
-			js_version = max(js_version, path.getmtime(file_path))
+		for file_path in files('./static', pattern):
+			js_version = max(js_version, int(path.getmtime(file_path)))
 	return js_version
 

@@ -1,4 +1,3 @@
-import binascii
 from time import time
 from hashlib import sha256
 from turbo_config import app_secret, expiration_interval, flush_interval
@@ -15,7 +14,7 @@ class TokenClerk:
 
 	def __flush_if_necessary(self):
 		if(self.next_flush < time() and len(self.tokens) > 0):
-			for token in dict(self.tokens).keys():
+			for token in dict(self.tokens):
 				if(self.tokens[token] + expiration_interval < self.next_flush):
 					del self.tokens[token]
 			self.next_flush = time() + flush_interval

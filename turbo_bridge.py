@@ -24,18 +24,18 @@ def application(env, start_response):
 	if(turbo_db.db is None):
 		response_body, response_headers, status = error_view(
 			'Database Error',
-			'Database connection failed.')
+			'Database connection failed.',
+			status='500 Internal Server Error')
 
 	elif(path.startswith(api_path)):
 		response_body, response_headers, status = generate_json_response({'error': 'Unknown API call.'})
-		for name in api_calls:
+		for name, api_call in api_calls.items():
 			if(path == api_path + '/' + name):
-				response_body, response_headers, status = api_calls[name](env, csrf_clerk, turbo_db.db)
+				response_body, response_headers, status = api_call(env, csrf_clerk, turbo_db.db)
 				break
 
 	elif(path.startswith(base_path)):
-		for name in turbo_views:
-			item = turbo_views[name]
+		for name, item in turbo_views.items():
 			if(path == item.uri):
 				if(item.view is not None):
 					response_body, response_headers, status = item.view(env, csrf_clerk, turbo_db.db)

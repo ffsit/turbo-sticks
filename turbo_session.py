@@ -110,7 +110,7 @@ def retrieve_oauth_account(session, db):
 			account = json.loads(oauth.get(mastodon.get_account_url).text)
 			# Don't authenticate moved accounts, federated accounts or bots
 			if(int(account.get('id', '0')) > 0 and
-			   account.get('moved', None) is None and
+			   account.get('moved') is None and
 			   account.get('username','') == account.get('acct','@')):
 				return account
 	return None

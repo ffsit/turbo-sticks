@@ -46,6 +46,8 @@ Setup
 
 Change Log
 -----------
+#### 2.0.1
+Minor bug and consistency fixes as well as code cleanup
 #### 2.0.0
 Added Discord integration, improved security for upcoming integrations (requires DB reset)
 #### 1.1.0

@@ -1,44 +1,11 @@
-$breakpoint: 500px;
-$reference-height: 700;
-$responsive-multiplier: 100vmin/$reference-height;
-$fixed-multiplier: $breakpoint/$reference-height;
-$spx-multiplier: $responsive-multiplier;
-// returns a size relative to $spx-multiplier
-@function spx($pxsize) {
-	@return $pxsize*$spx-multiplier;
-}
+// IMPORTS
+@import '_global.scss'; // shared scss properties
 
-// use responsive sizes above breakpoint, fixed sizes below
-@mixin min-width-media($bp) {
-	$spx-multiplier: $fixed-multiplier !global;
-	@content;
-	$spx-multiplier: $responsive-multiplier !global;
-	@media (min-width: #{$bp}) and (min-height: #{$bp}) {
-		@content;
-	}
-}
+// Standard sizing overwrites
+@include overwrite-sizing(500px, 700);
 
 // GLOBALS
-$bg-color: #707070;
 $player-bg-color: #070707;
-$fg-color: #ddd;
-$inset-color: #272727; // input text boxes, quotes, etc.
-$outset-color: #444; // buttons, table headings, etc.
-$shadow-color: rgba(0, 0, 0, 0.25);
-$gradient-accent: rgba(0, 0, 0, 0.15);
-
-// Standard Effects
-$standard-shadow: spx(2) spx(2) spx(10) $shadow-color;
-@mixin standard-shadow() {
-	@include box-shadow($standard-shadow);
-}
-
-@mixin standard-gradient($color) {
-	background: $color linear-gradient(-60deg, $gradient-accent, transparent);
-}
-
-// IMPORTS
-@import 'prefixed.scss'; // css properties with prefixes for increased browser support
 
 * {
 	margin: 0;

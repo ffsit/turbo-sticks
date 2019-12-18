@@ -1,67 +1,6 @@
-$breakpoint: 600px;
-$reference-height: 860;
-$responsive-multiplier: 100vmin/$reference-height;
-$fixed-multiplier: $breakpoint/$reference-height;
-$spx-multiplier: $responsive-multiplier;
-/* returns a size relative to $spx-multiplier */
-@function spx($pxsize) {
-	@return $pxsize*$spx-multiplier;
-}
-
-// use responsive sizes above breakpoint, fixed sizes below
-@mixin min-width-media($bp) {
-	$spx-multiplier: $fixed-multiplier !global;
-	@content;
-	$spx-multiplier: $responsive-multiplier !global;
-	@media (min-width: #{$bp}) and (min-height: #{$bp}) {
-		@content;
-	}
-}
-
-// GLOBALS
-$bg-color: #707070;
-$fg-color: #ddd;
-$header-bg-color: #444;
-$main-bg-color: #333;
-$main-border-color: #555;
-$inset-color: #272727; // input text boxes, quotes, etc.
-$outset-color: #444; // buttons, table headings, etc.
-$shadow-color: rgba(0, 0, 0, 0.25);
-$gradient-accent: rgba(0, 0, 0, 0.15);
-$accent-color: #2f70a1;
-
-// use functions for global sizes, so they get computed fresh
-@function font-size() { @return spx(15); }
-@function line-height() { @return spx(22); }
-@function font-size-big() { @return spx(27); }
-@function line-height-big() { @return spx(35); }
-
-$a-tags: 'a, a:link, a:active, a:hover, a:visited';
-$a-tags-hover: 'a:active, a:hover';
-
 // IMPORTS
-@import 'prefixed.scss'; // css properties with prefixes for increased browser support
-@import 'fonts.scss'; // custom font families
-
-// Standard Effects
-$standard-shadow: spx(2) spx(2) spx(10) $shadow-color;
-@mixin standard-shadow() {
-	@include box-shadow($standard-shadow);
-}
-
-$top-shadow: spx(2) 0 spx(10) $shadow-color;
-@mixin top-shadow() {
-	@include box-shadow($top-shadow);
-}
-
-$standard-inset-shadow: inset spx(3) spx(3) spx(10) $shadow-color;
-@mixin standard-inset-shadow() {
-	@include box-shadow($standard-inset-shadow);
-}
-
-@mixin standard-gradient($color) {
-	background: $color linear-gradient(-60deg, $gradient-accent, transparent);
-}
+@import '_global.scss'; // shared scss properties
+@import '_fonts.scss'; // custom font includes
 
 // zero sized, relative sized and non-sized rules
 * {

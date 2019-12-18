@@ -1,15 +1,12 @@
-$breakpoint: 500px;
-$reference-height: 700;
-$responsive-multiplier: 100vh/$reference-height;
-$fixed-multiplier: $breakpoint/$reference-height;
-$spx-multiplier: $responsive-multiplier;
-// returns a size relative to $spx-multiplier
-@function spx($pxsize) {
-	@return $pxsize*$spx-multiplier;
-}
+// IMPORTS
+@import '_global.scss'; // shared scss properties
 
-// use responsive sizes above breakpoint, fixed sizes below
-@mixin min-width-media($bp) {
+// sizing overwrites
+@include overwrite-sizing(500px, 700);
+$responsive-multiplier: 100vh/$reference-height;
+
+// custom breakpoint function
+@mixin min-width-media-chat($bp) {
 	$spx-multiplier: $fixed-multiplier !global;
 	@content;
 	$spx-multiplier: $responsive-multiplier !global;
@@ -23,9 +20,6 @@ $spx-multiplier: $responsive-multiplier;
 @function font-size-login() { @return spx(18); }
 @function line-height-chat() { @return spx(20); }
 
-$a-tags: 'a, a:link, a:active, a:hover, a:visited';
-$a-tags-hover: 'a:active, a:hover';
-
 // Chat Color Map
 @mixin user-color-map($roles, $colors) {
 	@for $i from 1 through length($colors) {
@@ -36,9 +30,6 @@ $a-tags-hover: 'a:active, a:hover';
 		}
 	}
 }
-
-// IMPORTS
-@import 'prefixed.scss'; // css properties with prefixes for increased browser support
 
 html, body, #live {
 	width: 100%;
@@ -194,6 +185,7 @@ form.debug {
 	font-family: sans-serif;
 	font-size: 1.5em;
 	margin: 0 0 0.5em 0;
+	font-weight: bold;
 }
 
 // settings
@@ -440,7 +432,7 @@ form.debug {
 }
 
 // sized rules that require a media query with breakpoint
-@include min-width-media($breakpoint) {
+@include min-width-media-chat($breakpoint) {
 	body, input {
 		font-size: font-size-chat();
 	}

@@ -5,16 +5,21 @@
 </head>
 <body class="headless">
 <div id="content">
-	<p>Use the password you received in the e-mail from Patreon.</p>
+	<p class="big">If you're an active patron:</p>
+	<p><a href="%%(patreon_authorization_uri)s" class="button big" target="_parent">Unlock using Patreon</a><p>
+	<div class="spacer big">-</div>
+	<p class="big">Or use the password you received in the e-mail from Patreon:</p>
 	<form name="theatre_auth" action="%%(form_action)s" method="POST">
 		<section>
-			<label>Password:</label><section class="third"><!--
-				--><input name="theatre_password" type="password" class="rigid left"><!--
-				--><input type="submit" value="Submit" class="rigid right"><!--
+			<label class="big">Password:</label><section class="third"><!--
+				--><input name="theatre_password" type="password" class="rigid left big"><!--
+				--><input type="submit" value="Submit" class="rigid right big"><!--
 			--></section>
 		</section>
 	</form>
-	<p>Or if you are a member of the TURBO Club: <a href="%%(login_uri)s" class="button" target="_parent">Login using TURBOToot</a></p>
+	<div class="spacer big">-</div>
+	<p class="big">If you are a member of the TURBO Club:</p>
+	<p><a href="%%(login_uri)s" class="button big" target="_parent">Login using TURBOToot</a></p>
 </div>
 %(footer)s
 </body>

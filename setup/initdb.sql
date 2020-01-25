@@ -1,5 +1,13 @@
+DROP TABLE oauth;
 DROP TABLE users;
 DROP TABLE sessions;
+
+CREATE TABLE oauth (
+	app_name varchar(32),
+	access_token varchar(2080), -- encrypted access token
+	refresh_token varchar(2080), -- encrypted refresh token
+	token_expires_on integer -- unix timestamp
+);
 
 CREATE TABLE users (
 	id bigserial PRIMARY KEY,
@@ -17,13 +25,4 @@ CREATE TABLE sessions (
 	token_type varchar(32),
 	token_expires_on integer, -- unix timestamp
 	session_expires_on timestamp
-);
-
-CREATE TABLE discord_sessions (
-	id bigserial PRIMARY KEY,
-	discord_id varchar(64),
-	user_id bigserial UNIQUE,
-	access_token varchar(2080), -- encrypted access token
-	refresh_token varchar(2080), -- encrypted refresh token
-	token_expires_on integer -- unix timestamp
 );

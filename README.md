@@ -44,8 +44,16 @@ Setup
 * Run turbo_bridge.py using uWSGI
 * (optional) Setup cronjob to run `turbo_cron.py` daily
 
+Upgrade
+-----------
+* Run `setup.sh` in folder `setup` to generate the JS and CSS
+* Check `setup` folder for `upgradedb-v{major version}{minor version}.sql` if it's your first time upgrading to a specific minor or major revision.
+* Run database upgrade scripts in order from the oldest to newest version if you're skipping ahead multiple releases.
+
 Change Log
 -----------
+#### 2.1.0
+Added initial Patreon support for accessing /theatre based on your pledge to a campaign
 #### 2.0.1
 Minor bug and consistency fixes as well as code cleanup
 #### 2.0.0

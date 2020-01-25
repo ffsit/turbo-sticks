@@ -7,6 +7,7 @@ import turbo_user
 import turbo_templates as templates
 import turbo_nav
 import turbo_discord
+import turbo_patreon
 from turbo_db import DBWarning, DBError
 from turbo_config import *
 from turbo_util import *
@@ -197,7 +198,7 @@ logout_view = create_view(__logout_view, 'logout')
 
 def __oauth_callback_view(env, csrf_clerk, db):
 	get_vars = retrieve_get_vars(env)
-	redirect_uri = web_uri + base_path + '/callback'
+	redirect_uri = web_uri  + turbo_views['oauth-callback'].uri
 	authorization_response = redirect_uri + '?' + env['QUERY_STRING']
 	try:
 		oauth = turbo_session.OAuth2Session(mastodon.client_id, redirect_uri=redirect_uri, scope=mastodon.scope)
@@ -236,7 +237,7 @@ oauth_callback_view = create_view(__oauth_callback_view)
 
 def __discord_callback_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
 	page_data = basic_page_data('discord-callback')
-	redirect_uri = web_uri + base_path + '/discord-callback'
+	redirect_uri = web_uri  + turbo_views['discord-callback'].uri
 	authorization_response = redirect_uri + '?' + env['QUERY_STRING']
 	discord_user_url = discord.api_endpoint + '/users/@me'
 	try:
@@ -354,11 +355,15 @@ def __headless_theatre_view(env, get_vars, post_vars, csrf_clerk, db, session, u
 	page_data = basic_page_data('theatre-headless')
 	status = '200 OK'
 	given_password = post_vars.get('theatre_password', [''])[0]
-	if(user is not None or given_password == theatre_password):
+	if(user is not None or given_password == theatre_password or turbo_patreon.validate_session(env)):
 		page_data['chat_uri'] = turbo_views['chat-headless'].uri
 		page_data['video_sources'] = generate_video_sources(theatre_sources);
 		response_body = templates.render('oven_embed', page_data)
 	else:
+		redirect_uri = web_uri + turbo_views['patreon-theatre-callback'].uri
+		oauth = turbo_session.OAuth2Session(patreon.client_id, redirect_uri=redirect_uri, scope=patreon.scope)
+		authorization_url, state = oauth.authorization_url(patreon.authorize_url, turbo_session.generate_state(env, csrf_clerk))
+		page_data['patreon_authorization_uri'] = authorization_url
 		page_data['form_action'] = turbo_views['theatre-headless'].uri
 		page_data['login_uri'] = turbo_views['login'].uri + '?redirect_to=' + quote_plus(turbo_views['theatre'].uri)
 		response_body = templates.render('theatre_auth', page_data)
@@ -375,6 +380,56 @@ def __theatre_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
 	response_headers = basic_response_header(response_body)
 	return response_body, response_headers, status
 theatre_view = create_basic_view(__theatre_view, 'theatre', False)
+
+def __patreon_theatre_callback_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
+	page_data = basic_page_data('patreon-theatre-callback')
+	redirect_uri = web_uri + turbo_views['patreon-theatre-callback'].uri
+	authorization_response = redirect_uri + '?' + env['QUERY_STRING']
+	try:
+		oauth = turbo_session.OAuth2Session(patreon.client_id, redirect_uri=redirect_uri, scope=patreon.scope)
+		oauth_state = turbo_session.retrieve_oauth_state(get_vars.get('state', [''])[0])
+		if oauth_state and csrf_clerk.validate('oauth-authorization', oauth_state[0]):
+			token = oauth.fetch_token(patreon.token_url, authorization_response=authorization_response, client_secret=patreon.client_secret)
+			patreon_user = turbo_patreon.get_current_user(db, oauth)
+			if(patreon_user is not None and len(patreon_user) > 0):
+				#TODO: verify tier, for now print user details
+				print_info('Patreon user:\n' + json.dumps(patreon_user, indent=4))
+
+				memberships = patreon_user[0].get('memberships', [])
+				session_token = None
+				for item in memberships:
+					if(item.get('currently_entitled_amount_cents', 0) >= patreon.theatre_cents and
+					   item['campaign'][0]['id'] == patreon.campaign_id):
+						session_token = turbo_patreon.create_session()
+
+				if(session_token is None):
+					return error_view('Insufficient pledge',
+					                  'We could not verify that you are pledging $%d+ to the Video Games AWESOME Patreon.' % (patreon.theatre_cents//100,))
+
+				redirect_to = web_uri + turbo_views['theatre'].uri
+
+				status = '307 Temporary Redirect'
+				response_body = ''
+				response_headers = [
+					('Set-Cookie', "TB_PATREON_SESSION=%s; Domain=%s; Max-Age=%s; Path=/; Secure; HttpOnly" % (session_token, cookie_scope, expiration_interval)),
+					('Location', redirect_to)
+				]
+			else:
+				return error_view('Unexpected error',
+				                  'Failed to retrieve Patreon user details.')
+		else:
+			return error_view('CSRF Verfication failed',
+			                  'Failed to authorize Patreon account due to a CSRF verfication error, try again.')
+
+	except OAuth2Error as error:
+		# Might indicate a "deny" on granting access to the app
+		print_exception('OAuth 2.0 Error occured: ', error)
+		return error_view('OAuth Error',
+		                  'Failed to authorize Patreon account, try again.')
+	else:
+		# Normal function return without errors
+		return response_body, response_headers, status
+patreon_theatre_callback_view = create_basic_view(__patreon_theatre_callback_view, needs_auth=False)
 
 def __rules_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
 	page_data = basic_page_data('rules')
@@ -398,6 +453,7 @@ turbo_views['stream'] = turbo_view('Turbo Stream', '/stream', stream_view)
 turbo_views['stream-headless'] = turbo_view('Turbo Stream', '/stream-headless', headless_stream_view)
 turbo_views['theatre'] = turbo_view('Movie Night', '/theatre', theatre_view)
 turbo_views['theatre-headless'] = turbo_view('Movie Night', '/theatre-headless', headless_theatre_view)
+turbo_views['patreon-theatre-callback'] = turbo_view('Patreon Theatre Callback', '/patreon-theatre-callback', patreon_theatre_callback_view)
 turbo_views['rules'] = turbo_view('Rules', '/rules', rules_view)
 
 # List of nav items

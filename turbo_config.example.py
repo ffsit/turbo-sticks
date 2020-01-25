@@ -30,7 +30,7 @@ discord.scope = ['identify','guilds.join']
 # Discord Bot (requires CREATE_INSTANT_INVITE|MANAGE_ROLES permissions)
 discord.bot_token = 'your bots access token'
 
-# Discord Server Information (you can use retrieve_discord_info.py to determine them)
+# Discord Server Information (you can use retrieve_discord_ids.py to determine them)
 discord.server_id = 'your server/guild id'
 discord.turbo_role_id = 'your turbo role id'
 
@@ -38,6 +38,27 @@ discord.turbo_role_id = 'your turbo role id'
 discord.authorize_url = 'https://discordapp.com/api/oauth2/authorize'
 discord.token_url = 'https://discordapp.com/api/oauth2/token'
 discord.api_endpoint = 'https://discordapp.com/api/v6'
+
+# Patreon OAuth 2.0 Setup Vars
+patreon = SimpleNamespace()
+patreon.client_id = 'your patreon apps client id'
+patreon.client_secret = 'your patreon apps client secret'
+patreon.scope = ['identity','identity[email]']
+
+# Patreon creator's access token (only for initial setup)
+patreon.access_token = 'your patreon creators access token'
+patreon.refresh_token = 'your patreon creators refresh token'
+
+# Patreon API nodes (make sure to replace {campaign_id} with the relevant id)
+patreon.authorize_url = 'https://www.patreon.com/oauth2/authorize'
+patreon.token_url = 'https://www.patreon.com/api/oauth2/token'
+patreon.api_endpoint = 'https://www.patreon.com/api/oauth2/v2'
+
+# Patreon IDs (can be determined with the help of retrieve_patreon_ids.py)
+patreon.campaign_id = 'your patreon campaign id'
+
+# Patreon minimum pledge amount for theatre access in cents
+patreon.theatre_cents = 500
 
 # DB Connection
 db_host = '127.0.0.1'

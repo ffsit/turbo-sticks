@@ -283,6 +283,7 @@ input {
 	cursor: pointer;
 	vertical-align: middle;
 	font-family: "Heydings Controls";
+	font-weight: normal;
 
 	&:hover {
 		color: $accent-color;
@@ -367,6 +368,11 @@ p.help {
 		font-size: font-size-big();
 		line-height: line-height-big();
 		padding-bottom: spx(10);
+	}
+
+	.big {
+		font-size: font-size-big() !important;
+		line-height: line-height-big() !important;
 	}
 
 	section section {

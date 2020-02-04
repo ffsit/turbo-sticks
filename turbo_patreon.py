@@ -5,7 +5,7 @@ from requests_oauthlib import OAuth2Session
 from collections import OrderedDict
 
 #Local Imports
-from turbo_config import patreon, expiration_interval
+from turbo_config import patreon, expiration_interval, session_max_age
 from turbo_util import encrypt, decrypt, quote_plus, generate_random_token, retrieve_cookies
 
 this = sys.modules[__name__]

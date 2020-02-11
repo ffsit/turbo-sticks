@@ -8,7 +8,7 @@
 		"trim_breaklines": false,
 		"trim_last_semicolon": false,
 		
-		"shorten": true,
+		"shorten": false,
 		"shorten_zero": false,
 		"shorten_hexcolor": false,
 		"shorten_hexcolor_extended_names": false,

@@ -10,27 +10,32 @@ this = sys.modules[__name__]
 this.db = None
 this.db_initialized = None
 
+
 def init_db():
-	# DB connection already initialized and not timed out
-	if(this.db is not None and
-	   db_max_age is not None and
-	   this.db_initialized is not None and
-	   this.db_initialized + db_max_age < time()):
-		return True
+    # DB connection already initialized and not timed out
+    if(this.db is not None and
+       db_max_age is not None and
+       this.db_initialized is not None and
+       this.db_initialized + db_max_age < time()):
+        return True
 
-	# Close old connection if it exists
-	if(this.db is not None):
-		this.db.close()
+    # Close old connection if it exists
+    if(this.db is not None):
+        this.db.close()
 
-	try:
-		connection_params = {
-			'host': db_host,
-			'database': db_name,
-			'user': db_user,
-			'password': db_pass
-		}
-		this.db = psycopg2.connect(**connection_params)
-		this.db_initialized = time()
-		return this.db is not None
-	except:
-		return False
+    try:
+        connection_params = {
+            'host': db_host,
+            'database': db_name,
+            'user': db_user,
+            'password': db_pass
+        }
+        this.db = psycopg2.connect(**connection_params)
+        this.db_initialized = time()
+        return this.db is not None
+    except Exception:
+        return False
+
+
+DBWarning
+DBError

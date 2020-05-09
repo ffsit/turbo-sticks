@@ -20,7 +20,7 @@ class ACL(IntEnum):
     patron = 10
     turbo = 20
     helper = 30
-    mod = 40
+    moderator = 40
     crew = 50
     admin = 60
 

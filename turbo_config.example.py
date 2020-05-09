@@ -89,13 +89,3 @@ stream_sources = [
         'label': 'Twitch'
     }
 ]
-
-# Theatre
-theatre_password = 'ttturbo'  # Used to authenticate non turbo viewers
-theatre_sources = [
-    {
-        'embed_type': 'oven-webrtc',
-        'embed': 'wss://v-cdn.acra.cloud:3333/app/stream_o',
-        'label': 'Oven Test'
-    }
-]

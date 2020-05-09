@@ -95,6 +95,7 @@ input {
 	&[type=button], &[type=submit], &[type=reset] {
 		font-weight: bold;
 		background: $outset-color;
+		cursor: pointer;
 		@include standard-gradient($outset-color);
 
 		&:enabled:hover {
@@ -415,7 +416,7 @@ p.help {
 	#{$a-tags} {
 		&.button {
 			font-size: font-size();
-			padding: spx(5) spx(10);
+			padding: (line-height() - font-size())/2 (line-height() - font-size());
 			line-height: line-height();
 			border-radius: spx(3);
 			margin: spx(4);

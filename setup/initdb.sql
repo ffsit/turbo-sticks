@@ -3,10 +3,15 @@ DROP TABLE users;
 DROP TABLE sessions;
 
 CREATE TABLE oauth (
-	app_name varchar(32),
+	app_name varchar(32) UNIQUE,
 	access_token varchar(2080), -- encrypted access token
 	refresh_token varchar(2080), -- encrypted refresh token
 	token_expires_on integer -- unix timestamp
+);
+
+CREATE TABLE properties (
+	key varchar(128) UNIQUE,
+	value varchar(4128) -- encrypted value
 );
 
 CREATE TABLE users (

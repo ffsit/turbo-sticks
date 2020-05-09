@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+%(html_header)s
+</head>
+<body>
+%(header)s
+<div id="page">
+%%(nav)s
+	<div id="content">
+		<h1>AWESOME Piece Theatre Administration</h1>
+		<form name="theatre_admin" action="%%(form_action)s" method="POST">
+			<input name="csrf_token" type="hidden" value="%%(csrf_token)s">
+			<section>
+				<label>APT-Password:</label><input name="theatre_password" type="text" value="%%(theatre_password)s" class="third">
+			</section>
+			<section>
+				<label>YouTube Stream ID:</label><input name="youtube_stream_id" type="text" value="%%(youtube_stream_id)s" class="third">
+			</section>
+			<input type="submit" value="Save"><a class="button" href="%%(form_action)s">Cancel</a>
+		</form>
+	</div>
+</div>
+%(footer)s
+</body>

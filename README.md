@@ -52,6 +52,8 @@ Upgrade
 
 Change Log
 -----------
+#### 2.2.0
+Added ACl and admin view to manage AWESOME Piece Theatre password and stream source
 #### 2.1.0
 Added initial Patreon support for accessing /theatre based on your pledge to a campaign
 #### 2.0.1

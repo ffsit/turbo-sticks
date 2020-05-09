@@ -11,6 +11,7 @@ import turbo_discord as discord
 import turbo_patreon as patreon
 import turbo_util as util
 from turbo_db import DBError
+from turbo_properties import get_property, set_property
 from turbo_user import ACL, User
 
 this = sys.modules[__name__]
@@ -131,7 +132,7 @@ def create_basic_view(func, nav='error', min_access_level=ACL.turbo,
             access_level = User.get_access_level(user)
             if access_level < min_access_level:
                 return error_view('Missing Privileges',
-                                  'You do not have the necessary '
+                                  'You do not have the required '
                                   'permissions to access this.',
                                   access_level=access_level)
             response_body, response_headers, status = func(
@@ -149,7 +150,8 @@ def error_view(title, detail, nav='error', status='200 OK', headless=False,
         page_data = basic_page_data(nav)
         page_data['error_title'] = title
         page_data['error_detail'] = detail
-        page_data['nav'] = turbo_nav.generate_html(nav, access_level)
+        page_data['nav'] = turbo_nav.generate_html(nav,
+                                                   access_level=access_level)
 
         if(headless):
             response_body = templates.render('error_headless', page_data)
@@ -463,13 +465,12 @@ def __headless_theatre_view(env, get_vars, post_vars, csrf_clerk, db, session,
     page_data = basic_page_data('theatre-headless')
     status = '200 OK'
     given_password = post_vars.get('theatre_password', [''])[0]
-    if(user is not None or given_password == config.theatre_password or
+    theatre_password = get_property(db, 'theatre_password', None)
+    if(user is not None or given_password == theatre_password or
        patreon.validate_session(env)):
         page_data['chat_uri'] = turbo_views['chat-headless'].uri
-        page_data['video_sources'] = util.generate_video_sources(
-            config.theatre_sources
-        )
-        response_body = templates.render('oven_embed', page_data)
+        page_data['youtube_stream_id'] = get_property(db, 'theatre_stream_id')
+        response_body = templates.render('youtube_embed', page_data)
     else:
         callback_view = turbo_views['patreon-theatre-callback']
         redirect_uri = config.web_uri + callback_view.uri
@@ -492,6 +493,28 @@ def __headless_theatre_view(env, get_vars, post_vars, csrf_clerk, db, session,
     return response_body, response_headers, status
 headless_theatre_view = create_basic_view(__headless_theatre_view,
                                           'theatre-headless', ACL.guest, True)
+
+
+def __theatre_admin_view(env, get_vars, post_vars, csrf_clerk, db, session,
+                         user):
+    page_data = basic_page_data('theatre-admin')
+    page_data['nav'] = turbo_nav.generate_html('theatre-admin', user)
+    theatre_password = post_vars.get(
+        'theatre_password', [get_property(db, 'theatre_password')])[0]
+    youtube_stream_id = post_vars.get(
+        'youtube_stream_id', [get_property(db, 'theatre_stream_id')])[0]
+    set_property(db, 'theatre_password', theatre_password)
+    set_property(db, 'theatre_stream_id', youtube_stream_id)
+    page_data['form_action'] = turbo_views['theatre-admin'].uri
+    page_data['theatre_password'] = theatre_password
+    page_data['youtube_stream_id'] = youtube_stream_id
+    page_data['csrf_token'] = csrf_clerk.register(session)
+    status = '200 OK'
+    response_body = templates.render('theatre_admin', page_data)
+    response_headers = util.basic_response_header(response_body)
+    return response_body, response_headers, status
+theatre_admin_view = create_basic_view(__theatre_admin_view, 'theatre-admin',
+                                       ACL.crew)
 
 
 def __theatre_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
@@ -619,6 +642,9 @@ turbo_views['stream'] = turbo_view(
 turbo_views['stream-headless'] = turbo_view(
     'TURBO Stream', '/stream-headless', headless_stream_view
 )
+turbo_views['theatre-admin'] = turbo_view(
+    'Move Night Admin', '/theatre-admin', theatre_admin_view
+)
 turbo_views['theatre'] = turbo_view(
     'Movie Night', '/theatre', theatre_view
 )
@@ -656,6 +682,7 @@ set_nav_item('login', max_access_level=ACL.patron)
 set_nav_item('account', min_access_level=ACL.turbo)
 set_nav_item('chat', min_access_level=ACL.turbo)
 set_nav_item('stream', min_access_level=ACL.turbo)
+set_nav_item('theatre-admin', min_access_level=ACL.crew)
 set_nav_item('theatre')
 set_nav_external_item('toot', 'TURBO Toot',
                       'https://toot.turbo.chat')

@@ -177,7 +177,9 @@ class User:
 
     @staticmethod
     def get_access_level(user):
+        if not user:
+            return ACL.guest
         if user and user.username in special_users:
             return ACL[special_users[user.username]]
-        return ACL.guest
+        return ACL.turbo
 # End class User

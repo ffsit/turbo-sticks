@@ -5,13 +5,13 @@ from oauthlib.oauth2 import OAuth2Error
 
 import turbo_nav
 import turbo_session
-import turbo_user
 import turbo_config as config
 import turbo_templates as templates
 import turbo_discord as discord
 import turbo_patreon as patreon
 import turbo_util as util
 from turbo_db import DBError
+from turbo_user import ACL, User
 
 this = sys.modules[__name__]
 
@@ -80,7 +80,8 @@ def create_view(func, nav='error', headless=False):
 # func is a function of the form:
 # func(env, get_vars, post_vars, csrf_clerk, db, session, user)
 #      -> body, response_headers, status
-def create_basic_view(func, nav='error', needs_auth=True, headless=False):
+def create_basic_view(func, nav='error', min_access_level=ACL.turbo,
+                      headless=False):
     def basic_view(env, csrf_clerk, db):
         get_vars = util.retrieve_get_vars(env)
         post_vars = util.retrieve_post_vars(env)
@@ -90,12 +91,13 @@ def create_basic_view(func, nav='error', needs_auth=True, headless=False):
         # Start OAuth
         cookie_set = int(get_vars.get('cookie_set', [0])[0])
         # Failed to set cookie, tell user to enable cookies to use this site
-        if(account is None and needs_auth and cookie_set == 1):
+        if(account is None and min_access_level >= ACL.turbo and
+           cookie_set == 1):
             return error_view('Login Error',
                               'Failed to create session. Try to enable '
                               ' cookies for this site.')
 
-        elif(account is None and needs_auth):
+        elif(account is None and min_access_level >= ACL.turbo):
             # Show Auth Error in headless mode
             if(headless):
                 return error_view('Auth Error', 'You are not logged in.',
@@ -125,7 +127,13 @@ def create_basic_view(func, nav='error', needs_auth=True, headless=False):
 
         # Display View
         else:
-            user = turbo_user.User.create(account, db)
+            user = User.create(account, db)
+            access_level = User.get_access_level(user)
+            if access_level < min_access_level:
+                return error_view('Missing Privileges',
+                                  'You do not have the necessary '
+                                  'permissions to access this.',
+                                  access_level=access_level)
             response_body, response_headers, status = func(
                 env, get_vars, post_vars, csrf_clerk, db, session, user
             )
@@ -136,12 +144,12 @@ def create_basic_view(func, nav='error', needs_auth=True, headless=False):
 
 # Sub Site Views
 def error_view(title, detail, nav='error', status='200 OK', headless=False,
-               logged_in=False):
+               access_level=ACL.guest):
     try:
         page_data = basic_page_data(nav)
         page_data['error_title'] = title
         page_data['error_detail'] = detail
-        page_data['nav'] = turbo_nav.generate_html(nav, logged_in)
+        page_data['nav'] = turbo_nav.generate_html(nav, access_level)
 
         if(headless):
             response_body = templates.render('error_headless', page_data)
@@ -325,7 +333,7 @@ def __discord_callback_view(env, get_vars, post_vars, csrf_clerk, db, session,
                    user.discord_id != int(discord_user['id'])):
                     if(not discord.remove_turbo_role(user.discord_id)):
                         return error_view('Unexpected error',
-                                          'Failed to reassign Turbo status to '
+                                          'Failed to reassign TURBO status to '
                                           'a different Discord account. '
                                           'Please try again.')
                 user.set_discord_id(discord_user['id'])
@@ -369,9 +377,7 @@ def __account_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
             # silently failing on an invalid token is fine here
             user.reset_app_password()
     status = '200 OK'
-    page_data['nav'] = turbo_nav.generate_html(
-        'account', user is not None, True
-    )
+    page_data['nav'] = turbo_nav.generate_html('account', user, expanded=True)
     page_data['form_action'] = turbo_views['account'].uri
     page_data['username'] = user.username
     page_data['avatar_src'] = user.account.get('avatar', '')
@@ -411,12 +417,12 @@ def __headless_chat_view(env, get_vars, post_vars, csrf_clerk, db, session,
     response_headers = util.basic_response_header(response_body)
     return response_body, response_headers, status
 headless_chat_view = create_basic_view(__headless_chat_view, 'chat-headless',
-                                       False, True)
+                                       headless=True)
 
 
 def __chat_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
     page_data = basic_page_data('chat')
-    page_data['nav'] = turbo_nav.generate_html('chat', user is not None)
+    page_data['nav'] = turbo_nav.generate_html('chat', user)
     page_data['chat_uri'] = turbo_views['chat-headless'].uri
     status = '200 OK'
     response_body = templates.render('chat', page_data)
@@ -443,7 +449,7 @@ headless_stream_view = create_basic_view(__headless_stream_view,
 
 def __stream_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
     page_data = basic_page_data('stream')
-    page_data['nav'] = turbo_nav.generate_html('stream', user is not None)
+    page_data['nav'] = turbo_nav.generate_html('stream', user)
     page_data['stream_uri'] = turbo_views['stream-headless'].uri
     status = '200 OK'
     response_body = templates.render('stream', page_data)
@@ -485,24 +491,24 @@ def __headless_theatre_view(env, get_vars, post_vars, csrf_clerk, db, session,
     response_headers = util.basic_response_header(response_body)
     return response_body, response_headers, status
 headless_theatre_view = create_basic_view(__headless_theatre_view,
-                                          'theatre-headless', False, True)
+                                          'theatre-headless', ACL.guest, True)
 
 
 def __theatre_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
     page_data = basic_page_data('theatre')
-    page_data['nav'] = turbo_nav.generate_html('theatre', user is not None)
+    page_data['nav'] = turbo_nav.generate_html('theatre', user)
     page_data['theatre_uri'] = turbo_views['theatre-headless'].uri
     status = '200 OK'
     response_body = templates.render('theatre', page_data)
     response_headers = util.basic_response_header(response_body)
     return response_body, response_headers, status
-theatre_view = create_basic_view(__theatre_view, 'theatre', False)
+theatre_view = create_basic_view(__theatre_view, 'theatre', ACL.guest)
 
 
-def __patreon_theatre_callback_view(env, get_vars, post_vars, csrf_clerk, db,
-                                    session, user):
+def __patreon_theatre_callback_view(env, csrf_clerk, db):
     redirect_uri = config.web_uri + turbo_views['patreon-theatre-callback'].uri
     authorization_response = redirect_uri + '?' + env['QUERY_STRING']
+    get_vars = util.retrieve_get_vars(env)
     try:
         oauth = turbo_session.OAuth2Session(
             config.patreon.client_id,
@@ -568,19 +574,18 @@ def __patreon_theatre_callback_view(env, get_vars, post_vars, csrf_clerk, db,
     else:
         # Normal function return without errors
         return response_body, response_headers, status
-patreon_theatre_callback_view = create_basic_view(
-    __patreon_theatre_callback_view, needs_auth=False
-)
+patreon_theatre_callback_view = create_view(
+    __patreon_theatre_callback_view, ACL.guest)
 
 
 def __rules_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
     page_data = basic_page_data('rules')
-    page_data['nav'] = turbo_nav.generate_html('rules', user is not None)
+    page_data['nav'] = turbo_nav.generate_html('rules', user)
     status = '200 OK'
     response_body = templates.render('rules', page_data)
     response_headers = util.basic_response_header(response_body)
     return response_body, response_headers, status
-rules_view = create_basic_view(__rules_view, 'rules', False)
+rules_view = create_basic_view(__rules_view, 'rules', ACL.guest)
 
 
 # List of views
@@ -603,16 +608,16 @@ turbo_views['discord-callback'] = turbo_view(
     'Discord Callback', '/discord-callback', discord_callback_view
 )
 turbo_views['chat-headless'] = turbo_view(
-    'Turbo Chat', '/chat-headless', headless_chat_view
+    'TURBO Chat', '/chat-headless', headless_chat_view
 )
 turbo_views['chat'] = turbo_view(
-    'Turbo Chat', '/chat', chat_view
+    'TURBO Chat', '/chat', chat_view
 )
 turbo_views['stream'] = turbo_view(
-    'Turbo Stream', '/stream', stream_view
+    'TURBO Stream', '/stream', stream_view
 )
 turbo_views['stream-headless'] = turbo_view(
-    'Turbo Stream', '/stream-headless', headless_stream_view
+    'TURBO Stream', '/stream-headless', headless_stream_view
 )
 turbo_views['theatre'] = turbo_view(
     'Movie Night', '/theatre', theatre_view
@@ -631,32 +636,32 @@ turbo_views['rules'] = turbo_view(
 
 
 # List of nav items
-def set_nav_item(name, hidden_when_logged_out=False,
-                 hidden_when_logged_in=False):
+def set_nav_item(name, max_access_level=ACL.admin,
+                 min_access_level=ACL.guest):
     turbo_nav.items[name] = turbo_nav.nav_item(turbo_views[name],
-                                               hidden_when_logged_out,
-                                               hidden_when_logged_in)
+                                               max_access_level,
+                                               min_access_level)
 
 
 def set_nav_external_item(name, display_name, uri,
-                          hidden_when_logged_out=False,
-                          hidden_when_logged_in=False):
+                          max_access_level=ACL.admin,
+                          min_access_level=ACL.guest):
     dummy_view = turbo_view(display_name, uri)
     turbo_nav.items[name] = turbo_nav.nav_item(dummy_view,
-                                               hidden_when_logged_out,
-                                               hidden_when_logged_in)
+                                               max_access_level,
+                                               min_access_level)
 
 
-set_nav_item('login', False, True)
-set_nav_item('account', True)
-set_nav_item('chat', True)
-set_nav_item('stream', True)
+set_nav_item('login', max_access_level=ACL.patron)
+set_nav_item('account', min_access_level=ACL.turbo)
+set_nav_item('chat', min_access_level=ACL.turbo)
+set_nav_item('stream', min_access_level=ACL.turbo)
 set_nav_item('theatre')
-set_nav_external_item('toot', 'Turbo Toot',
+set_nav_external_item('toot', 'TURBO Toot',
                       'https://toot.turbo.chat')
-set_nav_external_item('discourse', 'Turbo Discourse',
+set_nav_external_item('discourse', 'TURBO Discourse',
                       'https://discourse.turbo.chat')
 set_nav_item('rules')
-set_nav_item('logout', True)
+set_nav_item('logout', min_access_level=ACL.turbo)
 
 this.turbo_views = turbo_views

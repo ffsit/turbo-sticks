@@ -3,12 +3,18 @@ from types import SimpleNamespace
 
 # Config
 web_uri = 'https://sticks.turbo.chat'
-page_title = 'Turbo Sticks Account Management'
-page_description = 'Turbo Sticks is an authentication bridge between various Turbo services.'
+page_title = 'TURBO Sticks'
+page_description = 'TURBO Sticks is an authentication bridge between various TURBO services.'
 app_secret = 'itsasecret'  # Secret used for crypto
 base_path = ''
 api_path = '/api'  # JSON calls, local only for now
 debug_mode = False
+
+special_users = {
+    'nulani': 'admin',
+    'FarFromSubtle': 'crew',
+    'MissBlow': 'crew',
+}
 
 # Mastodon OAuth 2.0 Setup Vars
 mastodon = SimpleNamespace()

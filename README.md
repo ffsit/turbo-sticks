@@ -1,4 +1,4 @@
-Turbo Sticks Account Management
+TURBO Sticks Account Management
 ===========
 
 This authentication bridge authenticates against an OAuth 2.0 provider to present users with member only functionalities.

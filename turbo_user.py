@@ -1,5 +1,7 @@
+from enum import IntEnum
 from hashlib import md5
 from turbo_util import encrypt, decrypt, urandom
+from turbo_config import special_users
 
 
 # Password Helpers
@@ -11,6 +13,19 @@ def generate_app_password():
                 '123456789*!-.+_')
     seed = urandom(16)
     return ''.join(alphabet[byte % len(alphabet)] for byte in seed)
+
+
+class ACL(IntEnum):
+    guest = 0
+    patron = 10
+    turbo = 20
+    helper = 30
+    mod = 40
+    crew = 50
+    admin = 60
+
+    def __getitem__(self, key):
+        return getattr(self, key)
 
 
 # Begin class User
@@ -159,4 +174,11 @@ class User:
                         return row[0]
                     return 0
         return None
+
+    @staticmethod
+    def get_access_level(user):
+        if not user:
+            return ACL.guest
+        if user.username in special_users:
+            return ACL[special_users[user.username]]
 # End class User

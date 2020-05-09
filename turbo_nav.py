@@ -1,7 +1,7 @@
 import sys
 from collections import OrderedDict
 from urllib.parse import quote_plus
-
+from turbo_user import ACL, User
 this = sys.modules[__name__]
 
 # Nav Items
@@ -9,23 +9,23 @@ this.items = OrderedDict()
 
 
 class nav_item:
-    def __init__(self, turbo_view, hidden_when_logged_out=False,
-                 hidden_when_logged_in=False):
+    def __init__(self, turbo_view, max_access_level=ACL.admin,
+                 min_access_level=ACL.guest):
         self.turbo_view = turbo_view
-        self.hidden_when_logged_out = hidden_when_logged_out
-        self.hidden_when_logged_in = hidden_when_logged_in
+        self.max_access_level = max_access_level
+        self.min_access_level = min_access_level
 
 
-def generate_html(page_name, logged_in=False, expanded=False):
+def generate_html(page_name, user=None, **kwargs):
+    access_level = kwargs.get('access_level', User.get_access_level(user))
     page_item = this.items.get(page_name)
-    hover = ' hover' if expanded else ''
+    hover = ' hover' if kwargs.get('expanded', False) else ''
     html = '\t<ul id="nav" class="no-js%s" aria-haspopup="true">\n' % (hover,)
     html += '\t\t<li class="arrow down"><span></span></li>\n'
     for name in this.items:
         item = this.items[name]
         view = item.turbo_view
-        if((not logged_in and not item.hidden_when_logged_out) or
-           (logged_in and not item.hidden_when_logged_in)):
+        if item.max_access_level >= access_level >= item.min_access_level:
             if name == page_name:
                 html += '\t\t<li><span>%s</span></li>\n' % (view.display_name,)
             else:

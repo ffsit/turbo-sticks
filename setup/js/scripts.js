@@ -183,26 +183,8 @@
 			});
 			page.appendChild(minimize);
 		}
-	};
 
-	function choose_video_source(index, player) {
-		if(main.vsrc && player && index !== main.cur_video_source) {
-			var video = main.vsrc[index];
-			if(video) {
-				player.innerHTML = '';
-
-				switch(video.embed_type) {
-					case 'html':
-						player.innerHTML = video.embed;
-						break;
-				}
-
-				main.cur_video_source = index;
-			}
-		}
-	}
-
-	function init_video(vsrc) {
+		// Toggle Chat
 		var chat_embed = document.getElementById('chat_embed');
 		var player_embed = document.getElementById('player_embed');
 		var toggle = document.getElementById('toggleview');
@@ -230,60 +212,79 @@
 			}
 
 			toggle.addEventListener('click', minimize_chat);
+		}
+	}
 
-			// stream source selection (legacy)
-			var controls = document.getElementById('turboplayer_controls_wrapper');
-			var select = document.getElementById('vsources');
-			var player = document.getElementById('player');
+	function choose_video_source(index, player) {
+		if(main.vsrc && player && index !== main.cur_video_source) {
+			var video = main.vsrc[index];
+			if(video) {
+				player.innerHTML = '';
 
-			if(controls && select && player)
-			{
-				main.vsrc = vsrc;
+				switch(video.embed_type) {
+					case 'html':
+						player.innerHTML = video.embed;
+						break;
+				}
 
-				controls.addEventListener('mouseenter', function() {
-					sticks.addClass(controls, 'turboplayer_controls_fadeIn');
-				});
-
-				controls.addEventListener('mouseleave', function() {
-					sticks.removeClass(controls, 'turboplayer_controls_fadeIn');
-					select.blur();
-				});
-
-				main.vsrc.map(function(video, index){
-					// only add non-oven-player sources in legacy player
-					if(video.embed_type.substr(0,5) !== 'oven-') {
-						select[select.length] = new Option(video.label, index, false, select.length === 0);
-					}
-				});
-
-				select.addEventListener('change', function() {
-					choose_video_source(parseInt(select.value), player);
-				});
-
-				// init first video
-				choose_video_source(0, player);
+				main.cur_video_source = index;
 			}
+		}
+	}
 
-			// stream source selection (oven-player)
-			var ovenplayer = document.getElementById('ovenplayer');
+	function init_video(vsrc) {
+		// stream source selection (legacy)
+		var controls = document.getElementById('turboplayer_controls_wrapper');
+		var select = document.getElementById('vsources');
+		var player = document.getElementById('player');
 
-			if(ovenplayer)
-			{
-				var oven_sources = vsrc.filter(function(video){
-					return video.embed_type.substr(0,5) == 'oven-';
-				}).map(function(video){
-					return {
-						type: video.embed_type.substr(5),
-						file: video.embed,
-						label: video.label
-					};
-				});
-				main.ovenplayer = OvenPlayer.create('ovenplayer', {
-					autoStart: true,
-					image: '/static/movienight.png',
-					sources: oven_sources
-				});
-			}
+		if(controls && select && player)
+		{
+			main.vsrc = vsrc;
+
+			controls.addEventListener('mouseenter', function() {
+				sticks.addClass(controls, 'turboplayer_controls_fadeIn');
+			});
+
+			controls.addEventListener('mouseleave', function() {
+				sticks.removeClass(controls, 'turboplayer_controls_fadeIn');
+				select.blur();
+			});
+
+			main.vsrc.map(function(video, index){
+				// only add non-oven-player sources in legacy player
+				if(video.embed_type.substr(0,5) !== 'oven-') {
+					select[select.length] = new Option(video.label, index, false, select.length === 0);
+				}
+			});
+
+			select.addEventListener('change', function() {
+				choose_video_source(parseInt(select.value), player);
+			});
+
+			// init first video
+			choose_video_source(0, player);
+		}
+
+		// stream source selection (oven-player)
+		var ovenplayer = document.getElementById('ovenplayer');
+
+		if(ovenplayer)
+		{
+			var oven_sources = vsrc.filter(function(video){
+				return video.embed_type.substr(0,5) == 'oven-';
+			}).map(function(video){
+				return {
+					type: video.embed_type.substr(5),
+					file: video.embed,
+					label: video.label
+				};
+			});
+			main.ovenplayer = OvenPlayer.create('ovenplayer', {
+				autoStart: true,
+				image: '/static/movienight.png',
+				sources: oven_sources
+			});
 		}
 	}
 

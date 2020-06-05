@@ -789,6 +789,9 @@
 		if(_active_channel && channel_name == _active_channel.name) {
 			redraw_member_list();
 		}
+		if(_show_join_leave_message === true) {
+			write_info(channel_name, member['username']+' joined #'+channel_name);
+		}
 	}
 
 	function on_disconnect(channel_name, member) {
@@ -802,7 +805,9 @@
 		if(channel_name == _active_channel.name) {
 			redraw_member_list();
 		}
-
+		if(_show_join_leave_message === true) {
+			write_info(channel_name, member['username']+' left #'+channel_name);
+		}
 	}
 
 	function on_whisper(message) {

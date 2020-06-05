@@ -603,10 +603,9 @@ body {
 }
 
 html.frash-show-mode {
-	margin-top: 200px !important;
-
 	body {
 		font-size: 10pt;
+		background-color: #0f0e11;
 	}
 
 	.lower-ui {
@@ -654,6 +653,7 @@ html.frash-show-mode {
 	}
 
 	.channel-window {
+		margin: 200px;
 		width: 354px;
 
 		&::-webkit-scrollbar {

@@ -585,6 +585,7 @@ body {
 
 	.channel-window {
 		background-color: #e6e6e6;
+		color: #000;
 		@include scrollbar(rgba(80, 80, 80, .2), #e6e6e6);
 
 		.disabled {

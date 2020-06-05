@@ -1,6 +1,7 @@
 #ignore generated files
 *.css
 /static/*.js
+!/static/font-awesome/*
 !/static/ovenplayer/*
 *.directory
 /turbo_config.py

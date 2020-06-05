@@ -2,6 +2,7 @@ import asyncio
 import discord
 import json
 import logging
+import re
 import time
 import uuid
 from redis import StrictRedis as Redis
@@ -16,6 +17,7 @@ logging_level = logging.DEBUG if config.debug_mode else logging.WARNING
 logging.basicConfig(level=logging_level)
 logger = logging.getLogger('discord')
 webchat_roles = ['crew', 'mod', 'vip', 'turbo']
+emoji_regex = re.compile(r'<:\w+:\d+>')
 
 
 def format_user(user):
@@ -39,12 +41,16 @@ def get_epoch_from_datetime(dt):
     return (dt - datetime(1970, 1, 1)) / timedelta(seconds=1)
 
 
+def filter_emojis(content):
+    return emoji_regex.sub('', content)
+
+
 def format_message(message):
     author = message.author if hasattr(message, 'author') else None
     return {
         'id': str(message.id),
         'channel_name': message.channel.name,
-        'content': message.clean_content,
+        'content': filter_emojis(message.clean_content),
         'author': format_user(author),
         'created_at': get_epoch_from_datetime(message.created_at)
     }

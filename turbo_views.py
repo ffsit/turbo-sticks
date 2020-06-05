@@ -21,10 +21,13 @@ turbo_views = {}
 
 
 class turbo_view:
-    def __init__(self, display_name, uri=None, view=None):
+    def __init__(self, display_name, path=None, view=None, uri=None):
         self.display_name = display_name
-        if(uri is not None and uri.startswith('/')):
-            uri = config.base_path + uri
+        if(uri is None and path is not None):
+            uri = util.build_url(path, base='base')
+        if path is not None:
+            path = config.base_path + path
+        self.path = path
         self.uri = uri
         self.view = view
 
@@ -37,113 +40,117 @@ def basic_page_data(name):
     return {
         'title': util.sub_title(display_name),
         'description': config.page_description,
-        'main_path': this.turbo_views['main'].uri,
+        'main_path': this.turbo_views['main'].path,
         'css_version': util.get_css_version(),
         'js_version': util.get_js_version()
     }
 
 
-# Create View with standard error handling
-# func is a function of the form func(env, csrf_clerk, db)
-def create_view(func, nav='error', headless=False):
-    def view(env, csrf_clerk, db):
-        response_body = 'Template Render Error.'
-        response_headers = util.basic_response_header(response_body)
-        status = '200 OK'
-        try:
-            response_body, response_headers, status = func(env, csrf_clerk, db)
+# View decorator with standard error handling
+# func is a function of the form func(env, csrf_clerk)
+#      -> response_body, response_headers, status
+def view(func=None, *, nav='error', headless=False):
+    def decorator(func):
+        def decorated_function(env, csrf_clerk):
+            response_body = 'Template Render Error.'
+            response_headers = util.basic_response_header(response_body)
+            status = '200 OK'
+            try:
+                response_body, response_headers, status = func(env, csrf_clerk)
 
-        except DBError as error:
-            # Database Error
-            util.print_exception('Database Error occured: ', error)
-            return error_view('Database Error',
-                              'A database error has occured.',
-                              nav, '500 Internal Server Error', headless)
-        except OAuth2Error as error:
-            # OAuth 2.0 Error
-            util.print_exception('OAuth 2.0 Error occured: ', error)
-            return error_view('OAuth Error',
-                              'Failed to complete OAuth 2.0 handshake.',
-                              nav, status, headless)
-        except Exception as error:
-            # Unknown Exception
-            util.print_exception('Unexpected Error occured: ', error, False)
-            return error_view('Unknown Error',
-                              'An unexpected error has occured.',
-                              nav, '500 Internal Server Error', headless)
-        else:
-            # Normal function return without errors
-            return response_body, response_headers, status
-    return view
+            except DBError as error:
+                # Database Error
+                util.print_exception('Database Error occured:', error)
+                return error_view('Database Error',
+                                  'A database error has occured.',
+                                  nav, '500 Internal Server Error', headless)
+            except OAuth2Error as error:
+                # OAuth 2.0 Error
+                util.print_exception('OAuth 2.0 Error occured:', error)
+                return error_view('OAuth Error',
+                                  'Failed to complete OAuth 2.0 handshake.',
+                                  nav, status, headless)
+            except Exception as error:
+                # Unknown Exception
+                util.print_exception('Unexpected Error occured:', error, False)
+                return error_view('Unknown Error',
+                                  'An unexpected error has occured.',
+                                  nav, '500 Internal Server Error', headless)
+            else:
+                # Normal function return without errors
+                return response_body, response_headers, status
+        return decorated_function
+    return decorator(func) if callable(func) else decorator
 
 
-# Basic Views that use default login/logout behaviour
+# Auth View decorator that uses default login/logout behaviour
 # func is a function of the form:
-# func(env, get_vars, post_vars, csrf_clerk, db, session, user)
-#      -> body, response_headers, status
-def create_basic_view(func, nav='error', min_access_level=ACL.turbo,
-                      headless=False):
-    def basic_view(env, csrf_clerk, db):
-        get_vars = util.retrieve_get_vars(env)
-        post_vars = util.retrieve_post_vars(env)
-        session = turbo_session.get_session(env)
-        account = turbo_session.retrieve_oauth_account(session, db)
+# func(env, get_vars, post_vars, csrf_clerk, session, user)
+#      -> response_body, response_headers, status
+def auth_view(func=None, *, nav='error', min_access_level=ACL.turbo,
+              headless=False):
+    def decorator(func):
+        def decorated_function(env, csrf_clerk):
+            get_vars = util.retrieve_get_vars(env)
+            post_vars = util.retrieve_post_vars(env)
+            session = turbo_session.get_session(env)
+            account = turbo_session.retrieve_oauth_account(session)
 
-        # Start OAuth
-        cookie_set = int(get_vars.get('cookie_set', [0])[0])
-        # Failed to set cookie, tell user to enable cookies to use this site
-        if(account is None and min_access_level >= ACL.turbo and
-           cookie_set == 1):
-            return error_view('Login Error',
-                              'Failed to create session. Try to enable '
-                              ' cookies for this site.')
+            # Start OAuth
+            cookie_set = int(get_vars.get('cookie_set', [0])[0])
+            # Failed to set cookie, tell user to enable cookies
+            if(account is None and min_access_level >= ACL.turbo and
+               cookie_set == 1):
+                return error_view('Login Error',
+                                  'Failed to create session. Try to enable '
+                                  ' cookies for this site.')
 
-        elif(account is None and min_access_level >= ACL.turbo):
-            # Show Auth Error in headless mode
-            if(headless):
-                return error_view('Auth Error', 'You are not logged in.',
-                                  nav, headless=True)
+            elif(account is None and min_access_level >= ACL.turbo):
+                # Show Auth Error in headless mode
+                if(headless):
+                    return error_view('Auth Error', 'You are not logged in.',
+                                      nav, headless=True)
 
-            redirect_uri = config.web_uri + config.base_path + '/callback'
-            oauth = turbo_session.OAuth2Session(
-                config.mastodon.client_id,
-                redirect_uri=redirect_uri,
-                scope=config.mastodon.scope)
-            authorization_url, state = oauth.authorization_url(
-                config.mastodon.authorize_url,
-                turbo_session.generate_state(env, csrf_clerk)
-            )
+                redirect_uri = turbo_views['oauth-callback'].uri
+                oauth = turbo_session.OAuth2Session(
+                    config.mastodon.client_id,
+                    redirect_uri=redirect_uri,
+                    scope=config.mastodon.scope)
+                authorization_url, state = oauth.authorization_url(
+                    config.mastodon.authorize_url,
+                    turbo_session.generate_state(env, csrf_clerk)
+                )
 
-            status = '307 Temporary Redirect'
-            response_body = ''
-            response_headers = [('Location', str(authorization_url))]
+                status = '307 Temporary Redirect'
+                response_body = ''
+                response_headers = [('Location', str(authorization_url))]
 
-        # Redirect to url without cookie_set parameter
-        elif(cookie_set == 1):
-            status = '307 Temporary Redirect'
-            response_body = ''
-            response_headers = [
-                ('Location', config.web_uri + env['PATH_INFO'])
-            ]
+            # Redirect to url without cookie_set parameter
+            elif(cookie_set == 1):
+                status = '307 Temporary Redirect'
+                response_body = ''
+                response_headers = [
+                    ('Location', util.build_url(env['PATH_INFO']))
+                ]
 
-        # Display View
-        else:
-            user = User.create(account, db)
-            access_level = User.get_access_level(user)
-            if access_level < min_access_level:
-                return error_view('Missing Privileges',
-                                  'You do not have the required '
-                                  'permissions to access this.',
-                                  access_level=access_level)
-            response_body, response_headers, status = func(
-                env, get_vars, post_vars, csrf_clerk, db, session, user
-            )
+            # Display View
+            else:
+                user = User.create(account)
+                access_level = User.get_access_level(user)
+                if access_level < min_access_level:
+                    return error_view('Missing Privileges',
+                                      'You do not have the required '
+                                      'permissions to access this.',
+                                      access_level=access_level)
+                response_body, response_headers, status = func(
+                    env, get_vars, post_vars, csrf_clerk, session, user
+                )
 
-        return response_body, response_headers, status
-    return create_view(basic_view, nav, headless)
+            return response_body, response_headers, status
+        return view(decorated_function, nav=nav, headless=headless)
+    return decorator(func) if callable(func) else decorator
 
 
-# Sub Site Views
 def error_view(title, detail, nav='error', status='200 OK', headless=False,
                access_level=ACL.guest):
     try:
@@ -168,19 +175,21 @@ def error_view(title, detail, nav='error', status='200 OK', headless=False,
         return '', '', '500 Internal Server Error'
 
 
-def __main_view(env, csrf_clerk, db):
+# View callables
+@view(nav='main')
+def main_view(env, csrf_clerk):
     page_data = basic_page_data('main')
     response_body = 'Template Render Error.'
     response_headers = util.basic_response_header(response_body)
     status = '200 OK'
 
     session = turbo_session.get_session(env)
-    account = turbo_session.retrieve_oauth_account(session, db)
+    account = turbo_session.retrieve_oauth_account(session)
 
     # Couldn't auth based on session. Start fresh OAuth 2.0 handshake
     if(account is None):
         if(session is not None):
-            redirect_uri = config.web_uri + config.base_path + '/callback'
+            redirect_uri = turbo_views['oauth-callback'].uri
             oauth = turbo_session.OAuth2Session(
                 config.mastodon.client_id,
                 redirect_uri=redirect_uri,
@@ -198,7 +207,7 @@ def __main_view(env, csrf_clerk, db):
         # Not yet authenticated and no old session
         else:
             page_data['nav'] = turbo_nav.generate_html('main')
-            page_data['login_uri'] = turbo_views['login'].uri
+            page_data['login_uri'] = turbo_views['login'].path
             response_body = templates.render('main', page_data)
             response_headers = util.basic_response_header(response_body)
 
@@ -207,46 +216,42 @@ def __main_view(env, csrf_clerk, db):
         status = '307 Temporary Redirect'
         response_body = ''
         response_headers = [
-            ('Location', config.web_uri + turbo_views['account'].uri)
+            ('Location', turbo_views['account'].uri)
         ]
     return response_body, response_headers, status
-main_view = create_view(__main_view, 'main')
 
 
-def __login_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
+@auth_view(nav='login')
+def login_view(env, get_vars, post_vars, csrf_clerk, session, user):
     status = '307 Temporary Redirect'
     response_body = ''
     response_headers = [
-        ('Location', config.web_uri + turbo_views['account'].uri)
+        ('Location', turbo_views['account'].uri)
     ]
     return response_body, response_headers, status
-login_view = create_basic_view(__login_view, 'login')
 
 
-def __logout_view(env, csrf_clerk, db):
+@view(nav='logout')
+def logout_view(env, csrf_clerk):
     response_body = 'Template Render Error.'
     response_headers = util.basic_response_header(response_body)
     status = '200 OK'
 
     session = turbo_session.get_session(env)
-    turbo_session.delete_session(session, db)
+    turbo_session.delete_session(session)
     status = '307 Temporary Redirect'
     response_body = ''
-    cookie_header = (
-        'TB_SESSION=guest; Domain=%s; '
-        'Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; Secure; HttpOnly'
-    ) % (config.cookie_scope,)
     response_headers = [
-        ('Set-Cookie', cookie_header),
-        ('Location', config.web_uri + config.base_path + '/')
+        util.unset_cookie_header('TB_SESSION'),
+        ('Location', util.build_url('/', base='base'))
     ]
     return response_body, response_headers, status
-logout_view = create_view(__logout_view, 'logout')
 
 
-def __oauth_callback_view(env, csrf_clerk, db):
+@view
+def oauth_callback_view(env, csrf_clerk):
     get_vars = util.retrieve_get_vars(env)
-    redirect_uri = config.web_uri + turbo_views['oauth-callback'].uri
+    redirect_uri = turbo_views['oauth-callback'].uri
     authorization_response = redirect_uri + '?' + env['QUERY_STRING']
     try:
         oauth = turbo_session.OAuth2Session(
@@ -264,27 +269,18 @@ def __oauth_callback_view(env, csrf_clerk, db):
                 authorization_response=authorization_response,
                 client_secret=config.mastodon.client_secret
             )
-            session_token = turbo_session.create_session(token, db)
+            session_token = turbo_session.create_session(token)
 
             if(session_token is not None):
                 redirect_to = str(oauth_state[1])
                 if redirect_to.startswith('/'):
-                    redirect_to = '%s%s?cookie_set=1' % (
-                        config.web_uri, redirect_to
-                    )
+                    redirect_to = util.build_url(redirect_to,
+                                                 query={'cookie_set': 1})
 
                 status = '307 Temporary Redirect'
                 response_body = ''
-                cookie_header = (
-                    'TB_SESSION=%s; Domain=%s; Max-Age=%s; '
-                    'Path=/; Secure; HttpOnly'
-                ) % (
-                    session_token,
-                    config.cookie_scope,
-                    config.session_max_age
-                )
                 response_headers = [
-                    ('Set-Cookie', cookie_header),
+                    util.set_cookie_header('TB_SESSION', session_token),
                     ('Location', redirect_to)
                 ]
             else:
@@ -303,14 +299,14 @@ def __oauth_callback_view(env, csrf_clerk, db):
     else:
         # Normal function return without errors
         return response_body, response_headers, status
-oauth_callback_view = create_view(__oauth_callback_view)
 
 
-def __discord_callback_view(env, get_vars, post_vars, csrf_clerk, db, session,
-                            user):
-    redirect_uri = config.web_uri + turbo_views['discord-callback'].uri
+@auth_view
+def discord_callback_view(env, get_vars, post_vars, csrf_clerk, session, user):
+    redirect_uri = turbo_views['discord-callback'].uri
     authorization_response = redirect_uri + '?' + env['QUERY_STRING']
     discord_user_url = config.discord.api_endpoint + '/users/@me'
+    access_level = User.get_access_level(user)
     try:
         oauth = turbo_session.OAuth2Session(
             config.discord.client_id,
@@ -343,7 +339,7 @@ def __discord_callback_view(env, get_vars, post_vars, csrf_clerk, db, session,
 
                 redirect_to = str(oauth_state[1])
                 if redirect_to.startswith('/'):
-                    redirect_to = config.web_uri + redirect_to
+                    redirect_to = util.build_url(redirect_to)
 
                 status = '307 Temporary Redirect'
                 response_body = ''
@@ -351,26 +347,26 @@ def __discord_callback_view(env, get_vars, post_vars, csrf_clerk, db, session,
             else:
                 return error_view('Unexpected error',
                                   'Failed to retrieve Discord user details.',
-                                  logged_in=True)
+                                  access_level=access_level)
         else:
             return error_view('CSRF Verfication failed',
                               'Failed to authorize Discord account due to a '
                               'CSRF verfication error, try again.',
-                              logged_in=True)
+                              access_level=access_level)
 
     except OAuth2Error as error:
         # Might indicate a "deny" on granting access to the app
         util.print_exception('OAuth 2.0 Error occured: ', error)
         return error_view('OAuth Error',
                           'Failed to authorize Discord account, try again.',
-                          logged_in=True)
+                          access_level=access_level)
     else:
         # Normal function return without errors
         return response_body, response_headers, status
-discord_callback_view = create_basic_view(__discord_callback_view)
 
 
-def __account_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
+@auth_view(nav='account')
+def account_view(env, get_vars, post_vars, csrf_clerk, session, user):
     page_data = basic_page_data('account')
     # Reset app_password if requested
     if(int(post_vars.get('reset_app_password', [0])[0]) == 1):
@@ -380,14 +376,14 @@ def __account_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
             user.reset_app_password()
     status = '200 OK'
     page_data['nav'] = turbo_nav.generate_html('account', user, expanded=True)
-    page_data['form_action'] = turbo_views['account'].uri
+    page_data['form_action'] = turbo_views['account'].path
     page_data['username'] = user.username
     page_data['avatar_src'] = user.account.get('avatar', '')
     page_data['app_password'] = user.app_password_plain
     page_data['csrf_token'] = csrf_clerk.register(session)
     discord_member = discord.get_member(user.discord_id)
     discord_user = discord.get_user(discord_member)
-    redirect_uri = config.web_uri + config.base_path + '/discord-callback'
+    redirect_uri = turbo_views['discord-callback'].uri
     oauth = turbo_session.OAuth2Session(
         config.discord.client_id,
         redirect_uri=redirect_uri,
@@ -404,39 +400,78 @@ def __account_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
     response_body = templates.render('account', page_data)
     response_headers = util.basic_response_header(response_body)
     return response_body, response_headers, status
-account_view = create_basic_view(__account_view, 'account')
 
 
-def __headless_chat_view(env, get_vars, post_vars, csrf_clerk, db, session,
-                         user):
-    page_data = basic_page_data('chat-headless')
-    page_data['rules_uri'] = turbo_views['rules'].uri
-    page_data['rand_spinner'] = str(random.randint(1, 5))
-    page_data['username'] = user.username if user is not None else ''
-    page_data['password'] = user.app_password_plain if user is not None else ''
-    status = '200 OK'
-    response_body = templates.render('chat_headless', page_data)
-    response_headers = util.basic_response_header(response_body)
-    return response_body, response_headers, status
-headless_chat_view = create_basic_view(__headless_chat_view, 'chat-headless',
-                                       headless=True)
-
-
-def __chat_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
+@auth_view(nav='chat')
+def chat_view(env, get_vars, post_vars, csrf_clerk, session, user):
     page_data = basic_page_data('chat')
     page_data['nav'] = turbo_nav.generate_html('chat', user)
-    page_data['chat_uri'] = turbo_views['chat-headless'].uri
+    page_data['chat_uri'] = turbo_views['chat-headless'].path
     status = '200 OK'
     response_body = templates.render('chat', page_data)
     response_headers = util.basic_response_header(response_body)
     return response_body, response_headers, status
-chat_view = create_basic_view(__chat_view, 'chat')
 
 
-def __headless_stream_view(env, get_vars, post_vars, csrf_clerk, db, session,
-                           user):
+@auth_view(headless=True)
+def headless_chat_view(env, get_vars, post_vars, csrf_clerk, session, user):
+    page_data = basic_page_data('chat-headless')
+    page_data['frash_mode'] = ''
+    page_data['rules_uri'] = turbo_views['rules'].path
+    page_data['legacy_uri'] = turbo_views['legacy-chat-headless'].path
+    page_data['rand_spinner'] = str(random.randint(1, 5))
+    page_data['webchat_uri'] = util.build_url('/webchat', 'websockets')
+    page_data['live_channel'] = config.discord.live_channel
+    status = '200 OK'
+    response_body = templates.render('chat_headless', page_data)
+    response_headers = util.basic_response_header(response_body)
+    return response_body, response_headers, status
+
+
+@auth_view(min_access_level=ACL.crew)
+def frash_chat_view(env, get_vars, post_vars, csrf_clerk, session, user):
+    page_data = basic_page_data('frash-chat')
+    page_data['frash_mode'] = 'frash-show-mode'
+    page_data['rules_uri'] = turbo_views['rules'].path
+    page_data['legacy_uri'] = turbo_views['legacy-chat-headless'].path
+    page_data['rand_spinner'] = str(random.randint(1, 5))
+    page_data['webchat_uri'] = util.build_url('/webchat', 'websockets')
+    page_data['live_channel'] = config.discord.live_channel
+    status = '200 OK'
+    response_body = templates.render('chat_headless', page_data)
+    response_headers = util.basic_response_header(response_body)
+    return response_body, response_headers, status
+
+
+@auth_view(headless=True)
+def headless_legacy_chat_view(env, get_vars, post_vars, csrf_clerk, session,
+                              user):
+    page_data = basic_page_data('legacy-chat-headless')
+    page_data['rules_uri'] = turbo_views['rules'].path
+    page_data['rand_spinner'] = str(random.randint(1, 5))
+    page_data['username'] = user.username if user is not None else ''
+    page_data['password'] = user.app_password_plain if user is not None else ''
+    status = '200 OK'
+    response_body = templates.render('legacy_chat_headless', page_data)
+    response_headers = util.basic_response_header(response_body)
+    return response_body, response_headers, status
+
+
+@auth_view(nav='stream')
+def stream_view(env, get_vars, post_vars, csrf_clerk, session, user):
+    page_data = basic_page_data('stream')
+    page_data['nav'] = turbo_nav.generate_html('stream', user)
+    page_data['stream_uri'] = turbo_views['stream-headless'].path
+    status = '200 OK'
+    response_body = templates.render('stream', page_data)
+    response_headers = util.basic_response_header(response_body)
+    return response_body, response_headers, status
+
+
+@auth_view(headless=True)
+def headless_stream_view(env, get_vars, post_vars, csrf_clerk, session, user):
     page_data = basic_page_data('stream-headless')
-    page_data['chat_uri'] = turbo_views['chat-headless'].uri
+    page_data['chat_uri'] = turbo_views['chat-headless'].path
     page_data['default_embed'] = util.get_default_embed(config.stream_sources)
     page_data['video_sources'] = util.generate_video_sources(
         config.stream_sources
@@ -445,35 +480,33 @@ def __headless_stream_view(env, get_vars, post_vars, csrf_clerk, db, session,
     response_body = templates.render('stream_embed', page_data)
     response_headers = util.basic_response_header(response_body)
     return response_body, response_headers, status
-headless_stream_view = create_basic_view(__headless_stream_view,
-                                         'stream-headless', headless=True)
 
 
-def __stream_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
-    page_data = basic_page_data('stream')
-    page_data['nav'] = turbo_nav.generate_html('stream', user)
-    page_data['stream_uri'] = turbo_views['stream-headless'].uri
+@auth_view(nav='theatre', min_access_level=ACL.guest)
+def theatre_view(env, get_vars, post_vars, csrf_clerk, session, user):
+    page_data = basic_page_data('theatre')
+    page_data['nav'] = turbo_nav.generate_html('theatre', user)
+    page_data['theatre_uri'] = turbo_views['theatre-headless'].path
     status = '200 OK'
-    response_body = templates.render('stream', page_data)
+    response_body = templates.render('theatre', page_data)
     response_headers = util.basic_response_header(response_body)
     return response_body, response_headers, status
-stream_view = create_basic_view(__stream_view, 'stream')
 
 
-def __headless_theatre_view(env, get_vars, post_vars, csrf_clerk, db, session,
-                            user):
+@auth_view(min_access_level=ACL.guest, headless=True)
+def headless_theatre_view(env, get_vars, post_vars, csrf_clerk, session, user):
     page_data = basic_page_data('theatre-headless')
     status = '200 OK'
     given_password = post_vars.get('theatre_password', [''])[0]
-    theatre_password = get_property(db, 'theatre_password', None)
+    theatre_password = get_property('theatre_password', None)
     if(user is not None or given_password == theatre_password or
        patreon.validate_session(env)):
-        page_data['chat_uri'] = turbo_views['chat-headless'].uri
-        page_data['youtube_stream_id'] = get_property(db, 'theatre_stream_id')
+        page_data['chat_uri'] = turbo_views['chat-headless'].path
+        page_data['youtube_stream_id'] = get_property('theatre_stream_id')
         response_body = templates.render('youtube_embed', page_data)
     else:
         callback_view = turbo_views['patreon-theatre-callback']
-        redirect_uri = config.web_uri + callback_view.uri
+        redirect_uri = callback_view.uri
         oauth = turbo_session.OAuth2Session(
             config.patreon.client_id,
             redirect_uri=redirect_uri,
@@ -484,28 +517,27 @@ def __headless_theatre_view(env, get_vars, post_vars, csrf_clerk, db, session,
             turbo_session.generate_state(env, csrf_clerk)
         )
         page_data['patreon_authorization_uri'] = authorization_url
-        page_data['form_action'] = turbo_views['theatre-headless'].uri
-        login_uri = turbo_views['login'].uri
-        redirect_to = util.quote_plus(turbo_views['theatre'].uri)
-        page_data['login_uri'] = '%s?redirect_to=%s' % (login_uri, redirect_to)
+        page_data['form_action'] = turbo_views['theatre-headless'].path
+        page_data['login_uri'] = util.build_url(
+            turbo_views['login'].path,
+            query={'redirect_to': turbo_views['theatre'].path}
+        )
         response_body = templates.render('theatre_auth', page_data)
     response_headers = util.basic_response_header(response_body)
     return response_body, response_headers, status
-headless_theatre_view = create_basic_view(__headless_theatre_view,
-                                          'theatre-headless', ACL.guest, True)
 
 
-def __theatre_admin_view(env, get_vars, post_vars, csrf_clerk, db, session,
-                         user):
+@auth_view(nav='theatre-admin', min_access_level=ACL.crew)
+def theatre_admin_view(env, get_vars, post_vars, csrf_clerk, session, user):
     page_data = basic_page_data('theatre-admin')
     page_data['nav'] = turbo_nav.generate_html('theatre-admin', user)
     theatre_password = post_vars.get(
-        'theatre_password', [get_property(db, 'theatre_password')])[0]
+        'theatre_password', [get_property('theatre_password')])[0]
     youtube_stream_id = post_vars.get(
-        'youtube_stream_id', [get_property(db, 'theatre_stream_id')])[0]
-    set_property(db, 'theatre_password', theatre_password)
-    set_property(db, 'theatre_stream_id', youtube_stream_id)
-    page_data['form_action'] = turbo_views['theatre-admin'].uri
+        'youtube_stream_id', [get_property('theatre_stream_id')])[0]
+    set_property('theatre_password', theatre_password)
+    set_property('theatre_stream_id', youtube_stream_id)
+    page_data['form_action'] = turbo_views['theatre-admin'].path
     page_data['theatre_password'] = theatre_password
     page_data['youtube_stream_id'] = youtube_stream_id
     page_data['csrf_token'] = csrf_clerk.register(session)
@@ -513,23 +545,11 @@ def __theatre_admin_view(env, get_vars, post_vars, csrf_clerk, db, session,
     response_body = templates.render('theatre_admin', page_data)
     response_headers = util.basic_response_header(response_body)
     return response_body, response_headers, status
-theatre_admin_view = create_basic_view(__theatre_admin_view, 'theatre-admin',
-                                       ACL.crew)
 
 
-def __theatre_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
-    page_data = basic_page_data('theatre')
-    page_data['nav'] = turbo_nav.generate_html('theatre', user)
-    page_data['theatre_uri'] = turbo_views['theatre-headless'].uri
-    status = '200 OK'
-    response_body = templates.render('theatre', page_data)
-    response_headers = util.basic_response_header(response_body)
-    return response_body, response_headers, status
-theatre_view = create_basic_view(__theatre_view, 'theatre', ACL.guest)
-
-
-def __patreon_theatre_callback_view(env, csrf_clerk, db):
-    redirect_uri = config.web_uri + turbo_views['patreon-theatre-callback'].uri
+@view(nav='theatre')
+def patreon_theatre_callback_view(env, csrf_clerk):
+    redirect_uri = turbo_views['patreon-theatre-callback'].uri
     authorization_response = redirect_uri + '?' + env['QUERY_STRING']
     get_vars = util.retrieve_get_vars(env)
     try:
@@ -547,7 +567,7 @@ def __patreon_theatre_callback_view(env, csrf_clerk, db):
                 authorization_response=authorization_response,
                 client_secret=config.patreon.client_secret
             )
-            patreon_user = patreon.get_current_user(db, oauth)
+            patreon_user = patreon.get_current_user(oauth)
             if(patreon_user is not None and len(patreon_user) > 0):
                 memberships = patreon_user[0].get('memberships', [])
                 session_token = None
@@ -565,20 +585,13 @@ def __patreon_theatre_callback_view(env, csrf_clerk, db):
                                       'pledging $' + dollars + ' to the '
                                       'Video Games AWESOME Patreon.')
 
-                redirect_to = config.web_uri + turbo_views['theatre'].uri
+                redirect_to = turbo_views['theatre'].uri
 
                 status = '307 Temporary Redirect'
                 response_body = ''
-                cookie_header = (
-                    'TB_PATREON_SESSION=%s; Domain=%s; Max-Age=%s; '
-                    'Path=/; Secure; HttpOnly'
-                ) % (
-                    session_token,
-                    config.cookie_scope,
-                    config.expiration_interval,
-                )
                 response_headers = [
-                    ('Set-Cookie', cookie_header),
+                    util.set_cookie_header('TB_PATREON_SESSION',
+                                           session_token),
                     ('Location', redirect_to)
                 ]
             else:
@@ -597,18 +610,16 @@ def __patreon_theatre_callback_view(env, csrf_clerk, db):
     else:
         # Normal function return without errors
         return response_body, response_headers, status
-patreon_theatre_callback_view = create_view(
-    __patreon_theatre_callback_view, ACL.guest)
 
 
-def __rules_view(env, get_vars, post_vars, csrf_clerk, db, session, user):
+@auth_view(nav='rules', min_access_level=ACL.guest)
+def rules_view(env, get_vars, post_vars, csrf_clerk, session, user):
     page_data = basic_page_data('rules')
     page_data['nav'] = turbo_nav.generate_html('rules', user)
     status = '200 OK'
     response_body = templates.render('rules', page_data)
     response_headers = util.basic_response_header(response_body)
     return response_body, response_headers, status
-rules_view = create_basic_view(__rules_view, 'rules', ACL.guest)
 
 
 # List of views
@@ -633,8 +644,14 @@ turbo_views['discord-callback'] = turbo_view(
 turbo_views['chat-headless'] = turbo_view(
     'TURBO Chat', '/chat-headless', headless_chat_view
 )
+turbo_views['legacy-chat-headless'] = turbo_view(
+    'TURBO Chat', '/legacy-chat-headless', headless_legacy_chat_view
+)
 turbo_views['chat'] = turbo_view(
     'TURBO Chat', '/chat', chat_view
+)
+turbo_views['frash-chat'] = turbo_view(
+    'Frash Chat', '/frash-chat', frash_chat_view
 )
 turbo_views['stream'] = turbo_view(
     'TURBO Stream', '/stream', stream_view
@@ -643,7 +660,7 @@ turbo_views['stream-headless'] = turbo_view(
     'TURBO Stream', '/stream-headless', headless_stream_view
 )
 turbo_views['theatre-admin'] = turbo_view(
-    'Move Night Admin', '/theatre-admin', theatre_admin_view
+    'Movie Night Admin', '/theatre-admin', theatre_admin_view
 )
 turbo_views['theatre'] = turbo_view(
     'Movie Night', '/theatre', theatre_view
@@ -672,7 +689,7 @@ def set_nav_item(name, max_access_level=ACL.admin,
 def set_nav_external_item(name, display_name, uri,
                           max_access_level=ACL.admin,
                           min_access_level=ACL.guest):
-    dummy_view = turbo_view(display_name, uri)
+    dummy_view = turbo_view(display_name, uri=uri)
     turbo_nav.items[name] = turbo_nav.nav_item(dummy_view,
                                                max_access_level,
                                                min_access_level)
@@ -681,6 +698,7 @@ def set_nav_external_item(name, display_name, uri,
 set_nav_item('login', max_access_level=ACL.patron)
 set_nav_item('account', min_access_level=ACL.turbo)
 set_nav_item('chat', min_access_level=ACL.turbo)
+set_nav_item('frash-chat', min_access_level=ACL.crew)
 set_nav_item('stream', min_access_level=ACL.turbo)
 set_nav_item('theatre-admin', min_access_level=ACL.crew)
 set_nav_item('theatre')

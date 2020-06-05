@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+ 	<title>%%(title)s</title>
+	<meta name="description" content="%%(description)s">
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+	<link rel="stylesheet" type="text/css" href="/static/chat.css?v=%%(css_version)s">
+	<link rel="icon" type="image/png"  href="/favicon.png">
+	<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+	<!--[if IE]>
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<script type="text/javaScript" src="https://turbo.chat/iekludges.js"></script>
+	<![endif]-->
+	<!--[if lt IE 9]>
+		<script type="text/javaScript" src="https://turbo.chat/IE9.js"></script>
+	<![endif]-->
+</head>
+<body id="chat">
+	<div id="wrapper1">
+		<div class="center_helper hidden">
+			<div id="debug_wrapper" class="center-floating-container">
+				<p id="debugoutput"></p>
+				<form class="debug" id="vgairc_debugform" method="post" action="/debug.php">
+					<input type="submit" value="Send debug output">
+				</form>
+			</div>
+		</div>
+
+		<div class="center_helper">
+			<div id="login-wrapper">
+				<div id="slide_message" class="hidden"></div>
+				<div id="slide_login" class="slide_page">
+					<h1>Login</h1>
+					<div>Please read &amp; follow the <a href="%%(rules_uri)s" target="_blank">chat rules</a>. <p \>
+                                             To login to chat, you need to be logged into TURBO Sticks.</div>
+					<img class="spinner hidden" src="https://turbo.chat/content/img/spinner%%(rand_spinner)s.gif" alt="One moment">
+					<form id="vgairc_loginform" method="post" action="index.php">
+						<input type="hidden" id="nickname" maxlength="32" value="%%(username)s" placeholder="Nickname"/>
+						<input type="hidden" id="password" maxlength="128" value="%%(password)s" placeholder="Password"/>
+						<input type="hidden" id="channel" maxlength="128" value="#ffstv" placeholder="#ffstv"/>
+						<input id="Login" type="submit" value="Login"/>
+					</form>
+				</div>
+			</div>
+		</div>
+		<div class="channel-container">
+			<div class="center_helper">
+				<div id="settings-container" class="center-floating-container hidden fixed-top-centered">
+					<h2>Settings</h2>
+					<div class="settings-body">
+						<div class="settings-item" data-settings-type="smooth-scroll-mode" title="Toggles the smooth scroll feature." role="button">
+							<i class="fa fa-2x fa-toggle-on" aria-hidden="true"></i>
+							<span>Smooth Scroll</span>
+						</div>
+						<div class="settings-item hidden" data-settings-type="turbo-mode" title="Enables T-t-turbo mode!" data-channels="ffstv" role="button">
+							<i class="fa fa-2x fa-toggle-off" aria-hidden="true"></i>
+							<span>TURBO Only</span>
+						</div>
+						<div class="settings-item hidden" data-settings-type="frash-show-mode" title="Toggles Fraser's special show mode" role="button">
+							<i class="fa fa-2x fa-toggle-off" aria-hidden="true"></i>
+							<span>Frash Show Mode</span>
+						</div>
+						<div class="settings-item" data-settings-type="join-mode" title="Shows you when a user joins or leaves the chat." role="button">
+							<i class="fa fa-2x fa-toggle-off" aria-hidden="true"></i>
+							<span>Show Join/Leave</span>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- Serves as a template to create other channels. -->
+			<div id="channel-tab-template" class="channel-tab">
+				<div class="center_helper">
+					<!-- Users go into sections within this list. -->
+					<div class="user-list-wrapper center-floating-container hidden">
+						<h2>User List</h2>
+						<div class="user-list scaled mid-size">
+							<div class="mod-section hidden">
+								<h3>Mods</h3>
+								<div class="mod-section-body"></div>
+							</div>
+							<div class="guest-section hidden">
+								<h3>Guests</h3>
+								<div class="guest-section-body"></div>
+							</div>
+							<div class="regular-section hidden">
+								<h3>Regulars</h3>
+								<div class="regular-section-body"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- Chat messages and events go here. -->
+				<div class="channel-window scaled small"></div>
+				<!-- Adaptive chat buttons -->
+				<div class="lower-ui">
+					<div class="right">
+						<span class="button-container user-list-button disabled">
+							<i class="fa fa-users fa-inverse button" aria-hidden="true" title="Show Users" alt="?" role="button"></i>
+						</span>
+						<span class="button-container user-settings-button">
+							<i class="fa fa-cog fa-inverse button" aria-hidden="true" title="Show My Settings" alt="?" role="button"></i>
+						</span>
+						<span class="button-container user-support-button hidden">
+							<i class="fa fa-exclamation-circle fa-inverse button" aria-hidden="true" title="New Notification Events" alt="!" role="button"></i>
+						</span>
+					</div>
+					<!-- Input here to chat. -->
+					<div class="left">
+						<input type="text" class="chatbox" maxlength="300" placeholder="Start Chatting (Or type /help)" disabled>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
+	<script src="https://turbo.chat/js/util.min.js"></script>
+	<script src="https://turbo.chat/js/chat-kiwi.min.js"></script>
+	<script src="https://turbo.chat/js/chat-start.js"></script>
+	%(footer)s
+</body>
+</html>

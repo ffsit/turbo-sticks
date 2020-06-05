@@ -2,16 +2,18 @@ import json
 from time import time
 from requests_oauthlib import OAuth2Session
 
+from turbo_db import DBSession
 from turbo_config import session_max_age, mastodon
 from turbo_util import generate_random_token, retrieve_cookies
 from turbo_util import retrieve_get_vars, encrypt, decrypt
 
 
 # Session Store
-def create_session(oauth_token, db):
+def create_session(oauth_token):
+    db = DBSession()
     if(db is not None):
-        with db:
-            with db.cursor() as cur:
+        with db.connection as conn:
+            with conn.cursor() as cur:
                 session_token = generate_random_token(128)
                 sql = """
                         INSERT INTO sessions
@@ -46,10 +48,11 @@ def create_session(oauth_token, db):
     return None
 
 
-def delete_session(session_token, db):
+def delete_session(session_token):
+    db = DBSession()
     if(db is not None and session_token is not None):
-        with db:
-            with db.cursor() as cur:
+        with db.connection as conn:
+            with conn.cursor() as cur:
                 sql = """
                         DELETE
                           FROM sessions
@@ -58,10 +61,11 @@ def delete_session(session_token, db):
     return False
 
 
-def retrieve_token_from_session(session_token, db):
+def retrieve_token_from_session(session_token):
+    db = DBSession()
     if(db is not None):
-        with db:
-            with db.cursor() as cur:
+        with db.connection as conn:
+            with conn.cursor() as cur:
                 sql = """
                         SELECT access_token,
                                refresh_token,
@@ -89,7 +93,7 @@ def retrieve_token_from_session(session_token, db):
 
 # OAuth 2.0 Token Management
 def refresh_token_if_necessary(token):
-    if(token and int(token.get('expires_in', 0)) < 0):
+    if token and int(token.get('expires_in', 0)) < 0:
         # Token needs to refreshed
         client = OAuth2Session(mastodon.client_id, token=token)
         extra = {
@@ -107,10 +111,10 @@ def get_session(env):
     return None
 
 
-def retrieve_oauth_account(session, db):
-    if(session is not None and db is not None):
-        token = retrieve_token_from_session(session, db)
-        if(token is not None):
+def retrieve_oauth_account(session):
+    if session is not None:
+        token = retrieve_token_from_session(session)
+        if token is not None:
             refresh_token_if_necessary(token)
             oauth = OAuth2Session(mastodon.client_id, token=token)
             account = json.loads(oauth.get(mastodon.get_account_url).text)

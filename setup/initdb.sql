@@ -20,7 +20,8 @@ CREATE TABLE users (
 	discord_id bigint UNIQUE,
 	username varchar(31) UNIQUE,
 	app_password varchar(64), -- encrypted password, using password_secret
-	app_password_hash varchar(32) -- md5 hash
+	app_password_hash varchar(32), -- md5 hash
+	banned boolean NOT NULL DEFAULT(FALSE),
 );
 
 CREATE TABLE sessions (

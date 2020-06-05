@@ -27,6 +27,25 @@
 		request.send(data);
 	}
 
+	function set_cookie(name, value) {
+		var date = new Date();
+		date.setTime(date.getTime() + 10*365*24*60*60);
+		document.cookie = name+'='+value+';expires='+date.toUTCString()+';';
+	}
+
+	function get_cookie(name, default_value) {
+		if(document.cookie) {
+			var items = document.cookie.split(';');
+			for(var idx = 0; idx < items.length; idx++) {
+				var parts = items[idx].trim().split('=');
+				if(parts[0] === name) {
+					return parts[1];
+				}
+			}
+		}
+		return default_value || '';
+	}
+
 	function addClass(element, className) {
 		if(element.classList) {
 			element.classList.add(className);
@@ -40,6 +59,30 @@
 			element.classList.remove(className);
 		} else {
 			element.className = element.className.replace(new RegExp('(^|\\b)' + className.split(' ').join('|') + '(\\b|$)', 'gi'), ' ');
+		}
+	}
+
+	function hasClass(element, className) {
+		var classes = ' ' + element.className + ' ';
+		classes = classes.replace(/[\n\t]/g, ' ');
+		return classes.indexOf(' ' + className + ' ') > -1;
+	}
+
+	function toggleClass(element, className, activate) {
+		if(activate === undefined) {
+			activate = !hasClass(element, className);
+		}
+		if(activate) {
+			addClass(element, className);
+		} else {
+			removeClass(element, className);
+		}
+	}
+
+	function on(element, event, handler) {
+		var events = event.split(' ');
+		for(var idx = 0; idx < events.length; idx++) {
+			element.addEventListener(events[idx], handler);
 		}
 	}
 
@@ -65,7 +108,7 @@
 			}
 
 			// Hide notification on click outside
-			document.querySelectorAll('body')[0].addEventListener('click', hideNotifcation);
+			on(document.querySelector('body'), 'click', hideNotifcation);
 		}
 
 		// Display notification
@@ -86,19 +129,19 @@
 			var upArrow = nav.querySelectorAll('li.arrow.up span')[0];
 			var downArrow = nav.querySelectorAll('li.arrow.down span')[0];
 			if(upArrow !== null && downArrow !== null) {
-				downArrow.addEventListener('click', function() {
+				on(downArrow, 'click', function() {
 					addClass(nav, 'hover');
 				});
 
-				nav.addEventListener('mouseover', function() {
+				on(nav, 'mouseover', function() {
 					addClass(nav, 'hover');
 				});
 
-				upArrow.addEventListener('click', function() {
+				on(upArrow, 'click', function() {
 					removeClass(nav, 'hover');
 				});
 
-				nav.addEventListener('mouseleave', function() {
+				on(nav, 'mouseleave', function() {
 					removeClass(nav, 'hover');
 				});
 			}
@@ -106,13 +149,13 @@
 
 		// Bubble click event to top window
 		if(window.top != window.self) {
-			document.querySelectorAll('body')[0].addEventListener('click', function() {
+			on(document.querySelector('body'), 'click', function() {
 				var event = new MouseEvent('click', {
 					view: window.top,
 					bubbles: true,
 					cancelable: true
 				});
-				window.top.document.querySelectorAll('body')[0].dispatchEvent(event);
+				window.top.document.querySelector('body').dispatchEvent(event);
 			});
 		}
 
@@ -121,7 +164,7 @@
 		if(reset_app_password) {
 			// Copy App Password to Clipboard on Click
 			var app_password = document.getElementById('app_password');
-			app_password.addEventListener('click', function(event) {
+			on(app_password, 'click', function(event) {
 				app_password.select();
 				document.execCommand('copy');
 				displayNotification('App-Password copied to clipboard.', false);
@@ -129,11 +172,13 @@
 			});
 
 			// Reset App Password on Submit Click
-			var csrf_token = reset_app_password.querySelectorAll('input[name=csrf_token]')[0].value;
-			reset_app_password.addEventListener('submit', function(event) {
+			var csrf_field = reset_app_password.querySelectorAll('input[name=csrf_token]')[0];
+			on(reset_app_password, 'submit', function(event) {
+				var csrf_token = csrf_field.value;
 				ajax_post('/api/reset_app_password', 'csrf_token=' + csrf_token, function(data) {
 					if(app_password && !data['error']) {
 						app_password.value = data['app_password'];
+						csrf_field.value = data['csrf_token'];
 					} else {
 						displayNotification('<b>Error:</b> ' + data['error'], true);
 					}
@@ -153,7 +198,7 @@
 			var maximize = document.createElement('span');
 			addClass(maximize, 'control');
 			maximize.innerHTML = 'M';
-			maximize.addEventListener('click', function(){
+			on(maximize, 'click', function(){
 				addClass(page, 'maximized');
 				minimize.style.visibility = 'visible';
 			});
@@ -166,7 +211,7 @@
 				removeClass(page, 'maximized');
 				minimize.style.visibility = 'hidden';
 			}
-			minimize.addEventListener('click', min);
+			on(minimize, 'click', min);
 			document.onkeydown = function(event) {
 				event = event || window.event;
 				if(('key' in event && (event.key == 'Escape' || event.key == 'Esc')) ||
@@ -175,10 +220,10 @@
 					min();
 				}
 			};
-			minimize.addEventListener('mouseenter', function() {
+			on(minimize, 'mouseenter', function() {
 				minimize.style.opacity = 1;
 			});
-			minimize.addEventListener('mouseleave', function() {
+			on(minimize, 'mouseleave', function() {
 				minimize.style.opacity = 0;
 			});
 			page.appendChild(minimize);
@@ -191,27 +236,13 @@
 		if(chat_embed && player_embed && toggle)
 		{
 			// minimize / maximize chat
-			var toggle_button = toggle.querySelectorAll('.button')[0];
-
-			var minimize_chat = function() {
-				toggle.removeEventListener('click', minimize_chat);
-				toggle.addEventListener('click', maximize_chat);
-				addClass(chat_embed, 'minimized');
-				addClass(player_embed, 'maximized');
-				removeClass(toggle_button, 'maximize');
-				addClass(toggle_button, 'minimize');
-			}
-
-			var maximize_chat = function() {
-				toggle.removeEventListener('click', maximize_chat);
-				toggle.addEventListener('click', minimize_chat);
-				removeClass(chat_embed, 'minimized');
-				removeClass(player_embed, 'maximized');
-				removeClass(toggle_button, 'minimize');
-				addClass(toggle_button, 'maximize');
-			}
-
-			toggle.addEventListener('click', minimize_chat);
+			var toggle_button = toggle.querySelector('.button');
+			on(toggle, 'click', function() {
+				toggleClass(chat_embed, 'minimized');
+				toggleClass(player_embed, 'maximized');
+				toggleClass(toggle_button, 'maximize');
+				toggleClass(toggle_button, 'minimize');
+			});
 		}
 	}
 
@@ -242,11 +273,11 @@
 		{
 			main.vsrc = vsrc;
 
-			controls.addEventListener('mouseenter', function() {
+			on(controls, 'mouseenter', function() {
 				sticks.addClass(controls, 'turboplayer_controls_fadeIn');
 			});
 
-			controls.addEventListener('mouseleave', function() {
+			on(controls, 'mouseleave', function() {
 				sticks.removeClass(controls, 'turboplayer_controls_fadeIn');
 				select.blur();
 			});
@@ -258,7 +289,7 @@
 				}
 			});
 
-			select.addEventListener('change', function() {
+			on(select, 'change', function() {
 				choose_video_source(parseInt(select.value), player);
 			});
 
@@ -296,12 +327,17 @@
 
 	// Public Static Methods
 	main.ajax_post = ajax_post;
-	main.init_video = init_video;
+	main.set_cookie = set_cookie;
+	main.get_cookie = get_cookie;
 	main.addClass = addClass;
 	main.removeClass = removeClass;
+	main.hasClass = hasClass;
+	main.toggleClass = toggleClass;
+	main.on = on;
 	main.displayNotification = displayNotification;
 	main.hideNotifcation = hideNotifcation;
 	main.preventDefault = preventDefault;
+	main.init_video = init_video;
 
 	// Create public instance
 	baseObj[name] = main;

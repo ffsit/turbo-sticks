@@ -1,15 +1,22 @@
+from gevent import monkey
+monkey.patch_all()
+
 import atexit
 
 # Local Imports
-import turbo_db
 import turbo_csrf
-from turbo_config import base_path, api_path
+from turbo_db import DBSession
+from turbo_config import base_path, api_path, websockets_path
 from turbo_util import generate_json_response
-from turbo_views import turbo_views, error_view
 from turbo_ajax import api_calls
+from turbo_views import turbo_views, error_view
+from turbo_websockets import channels, init_redis_state
 
 # CSRF Protection
 csrf_clerk = turbo_csrf.TokenClerk()
+
+# Initialize state stored in Redis
+init_redis_state()
 
 
 # Web Server Main
@@ -20,9 +27,9 @@ def application(env, start_response):
         'The requested page or resource doesn\'t exist',
         status='404 Not Found')
 
-    turbo_db.init_db()
+    db = DBSession()
 
-    if(turbo_db.db is None):
+    if(db.connection is None):
         response_body, response_headers, status = error_view(
             'Database Error',
             'Database connection failed.',
@@ -34,15 +41,21 @@ def application(env, start_response):
         for name, api_call in api_calls.items():
             if(path == api_path + '/' + name):
                 response_body, response_headers, status = api_call(
-                    env, csrf_clerk, turbo_db.db)
+                    env, csrf_clerk)
                 break
+
+    elif(path.startswith(websockets_path)):
+        for channel in channels:
+            if(path == channel.path):
+                channel.open_websocket(env)
+                return []
 
     elif(path.startswith(base_path)):
         for name, item in turbo_views.items():
-            if(path == item.uri):
+            if(path == item.path):
                 if(item.view is not None):
                     response_body, response_headers, status = item.view(
-                        env, csrf_clerk, turbo_db.db)
+                        env, csrf_clerk)
                 break
 
     start_response(status, response_headers)
@@ -51,8 +64,9 @@ def application(env, start_response):
 
 # Cleanup on shutdown
 def shutdown():
-    if(turbo_db.db is not None):
-        turbo_db.db.close()
+    db = DBSession()
+    if(db is not None):
+        db.close()
 
 
 atexit.register(shutdown)

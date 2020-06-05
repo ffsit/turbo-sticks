@@ -1,40 +1,49 @@
-import sys
 import psycopg2
 from psycopg2 import Warning as DBWarning, Error as DBError
+from gevent.lock import RLock
 from time import time
 from turbo_config import db_host, db_name, db_user, db_pass, db_max_age
 
-this = sys.modules[__name__]
 
-# DB Handle
-this.db = None
-this.db_initialized = None
+class DBSession(object):
+    __instance = None
 
+    def __new__(cls):
+        if DBSession.__instance is None:
+            DBSession.__instance = object.__new__(cls)
+        return DBSession.__instance
 
-def init_db():
-    # DB connection already initialized and not timed out
-    if(this.db is not None and
-       db_max_age is not None and
-       this.db_initialized is not None and
-       this.db_initialized + db_max_age < time()):
-        return True
+    def __init__(self):
+        self._conn = None
+        self._initialized = None
+        self._refresh_lock = RLock()
 
-    # Close old connection if it exists
-    if(this.db is not None):
-        this.db.close()
+    def is_alive(self):
+        return self._conn is not None and self._conn.closed == 0
 
-    try:
-        connection_params = {
-            'host': db_host,
-            'database': db_name,
-            'user': db_user,
-            'password': db_pass
-        }
-        this.db = psycopg2.connect(**connection_params)
-        this.db_initialized = time()
-        return this.db is not None
-    except Exception:
-        return False
+    def needs_refresh(self):
+        return (self._initialized is not None and
+                self._initialized + db_max_age < time())
+
+    def close(self):
+        if self.is_alive():
+            self._conn.close()
+
+    @property
+    def connection(self):
+        with self._refresh_lock:
+            if not self.is_alive() or self.needs_refresh():
+                self.close()
+                kwargs = {
+                    'host': db_host,
+                    'database': db_name,
+                    'user': db_user,
+                    'password': db_pass
+                }
+                self._conn = psycopg2.connect(**kwargs)
+                self._initialized = time()
+
+        return self._conn
 
 
 DBWarning

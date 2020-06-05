@@ -16,13 +16,17 @@ Requirements
 For production use:
 * A HTTP server with WSGI support (e.g. nginx)
 * uWSGI
-* Python 3.5+
+* Python 3.6+
+  * discord
+  * gevent
   * oauthlib
+  * redis
   * requests
   * requests_oauthlib
   * psycopg2
   * pycrypto
 * PostgreSQL
+* Redis
 
 For compiling static CSS and JS resources:
 * sassc
@@ -35,14 +39,16 @@ Setup
 * Run `setup.sh` in folder `setup` to generate the JS and CSS
 * Configure nginx to serve /static and forward wsgi on `/<app path>` and `/<api path>`
 * Setup Postgres database and user for use with turbo sticks. Run `initdb.sql` to initialize tables
+* (optional) Setup Redis with unix socket
 * Setup an App in Mastodon with read:accounts privileges
 * Setup an App in Discord with identify and guilds.join scope
-* Create a Discord Bot and [authorize it](https://discordapp.com/developers/docs/topics/oauth2#bot-authorization-flow) with `CREATE_INSTANT_INVITE` and `MANAGE_ROLES` permissions
+* Create a Discord Bot and [authorize it](https://discordapp.com/developers/docs/topics/oauth2#bot-authorization-flow) with `CREATE_INSTANT_INVITE`, `MANAGE_ROLES`, `KICK_MEMBERS`, `BAN_MEMBERS`, `MANAGE_MESSAGES`, `VIEW_CHANNEL` and `MANAGE_WEBHOOKS` permissions
 * Adjust settings in `turbo_config.example.py` and rename to `turbo_config.py`
 * Run `retrieve_discord_ids.py` in tools folder to determine your server and role ids
 * Add server id and role id to `turbo_config.py`
-* Run turbo_bridge.py using uWSGI
+* Run `turbo_bridge.py` using uWSGI
 * (optional) Setup cronjob to run `turbo_cron.py` daily
+* (optional) Run `sticks_bot.py` to add discord integration to webchat
 
 Upgrade
 -----------
@@ -52,6 +58,8 @@ Upgrade
 
 Change Log
 -----------
+#### 2.3.0
+Added a websockets webchat with a discord bot to talk to. Removed Python 3.5 support.
 #### 2.2.0
 Added ACl and admin view to manage AWESOME Piece Theatre password and stream source
 #### 2.1.0

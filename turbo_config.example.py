@@ -2,12 +2,17 @@
 from types import SimpleNamespace
 
 # Config
-web_uri = 'https://sticks.turbo.chat'
+web_uri = 'sticks.turbo.chat'
+web_scheme = 'https'
 page_title = 'TURBO Sticks'
 page_description = 'TURBO Sticks is an authentication bridge between various TURBO services.'
 app_secret = 'itsasecret'  # Secret used for crypto
 base_path = ''
 api_path = '/api'  # JSON calls, local only for now
+websockets_path = '/websockets'
+websockets_scheme = 'wss'
+websockets_max_clients = 90  # this should be lower than the number of gevent workers
+redis_uri = 'unix:///var/run/redis/redis.sock'
 debug_mode = False
 
 special_users = {
@@ -27,6 +32,11 @@ mastodon.authorize_url = 'https://toot.turbo.chat/oauth/authorize'
 mastodon.token_url = 'https://toot.turbo.chat/oauth/token'
 mastodon.get_account_url = 'https://toot.turbo.chat/api/v1/accounts/verify_credentials'
 
+# Webchat
+message_history_ttl = 60*60*2  # message history goes back up to 2 hours
+message_history_length = 50  # message history goes back up to 50 messages
+timeout_duration = 5*60  # duration of timeouts in webchat
+
 # Discord OAuth 2.0 Setup Vars
 discord = SimpleNamespace()
 discord.client_id = 'your discord apps client id'
@@ -35,10 +45,13 @@ discord.scope = ['identify', 'guilds.join']
 
 # Discord Bot (requires CREATE_INSTANT_INVITE|MANAGE_ROLES permissions)
 discord.bot_token = 'your bots access token'
+discord.live_channel = 'live_chat'
 
 # Discord Server Information (you can use retrieve_discord_ids.py)
 discord.server_id = 'your server/guild id'
 discord.turbo_role_id = 'your turbo role id'
+discord.webhook_refresh_interval = 60*60
+discord.webchat_user_suffix = '@turbo.chat'
 
 # Discord API nodes
 discord.authorize_url = 'https://discordapp.com/api/oauth2/authorize'

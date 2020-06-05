@@ -7,9 +7,11 @@ from collections import OrderedDict
 # Local Imports
 import turbo_config as config
 import turbo_util as util
+from turbo_db import DBSession
 
 this = sys.modules[__name__]
 
+# TODO: change this into a TempSessionClerk that gets shared between greenlets
 # Temp session store (uses expiration_interval instead of session_max_age)
 this.sessions = {}
 
@@ -42,10 +44,11 @@ def validate_session(env):
 
 
 # Store initial oauth parameters, if not already stored
-def init_oauth(db):
+def init_oauth():
+    db = DBSession()
     if(db is not None):
-        with db:
-            with db.cursor() as cur:
+        with db.connection as conn:
+            with conn.cursor() as cur:
                 access_token = util.encrypt(config.patreon.access_token)
                 refresh_token = util.encrypt(config.patreon.refresh_token)
                 sql = """
@@ -67,40 +70,11 @@ def init_oauth(db):
                 cur.execute(sql, (access_token, refresh_token))
 
 
-def __refresh_access_token(db, token):
+def get_current_token():
+    db = DBSession()
     if(db is not None):
-        extra = {
-            'client_id': config.patreon.client_id,
-            'client_secret': config.patreon.client_secret
-        }
-
-        client = OAuth2Session(config.patreon.client_id, token=token)
-        new_token = client.refresh_token(config.patreon.token_url, **extra)
-
-        if not(new_token == token):
-            token = new_token
-            expires_in = token.get('token_expires_in', config.session_max_age)
-            with db:
-                with db.cursor() as cur:
-                    sql = """
-                            UPDATE oauth
-                               SET access_token = %s,
-                                   refresh_token = %s,
-                                   token_expires_on = %s
-                             WHERE app_name = 'patreon'"""
-
-                    cur.execute(sql, (
-                        util.encrypt(token['access_token']),
-                        util.encrypt(token['refresh_token']),
-                        int(expires_in) + int(time())
-                    ))
-        return token
-
-
-def __get_current_token(db):
-    if(db is not None):
-        with db:
-            with db.cursor() as cur:
+        with db.connection as conn:
+            with conn.cursor() as cur:
                 sql = """
                         SELECT access_token,
                                refresh_token,
@@ -127,14 +101,37 @@ def __get_current_token(db):
                         token['token_expires_in'] = -1
 
                 if(int(token['token_expires_in']) < 0):
-                    token = __refresh_access_token(db, token)
+                    client = OAuth2Session(config.patreon.client_id,
+                                           token=token)
+                    new_token = client.refresh_token(
+                        config.patreon.token_url,
+                        client_id=config.patreon.client_id,
+                        client_secret=config.patreon.client_secret
+                    )
+
+                    if not(new_token == token):
+                        token = new_token
+                        expires_in = token.get('token_expires_in',
+                                               config.session_max_age)
+                        sql = """
+                                UPDATE oauth
+                                   SET access_token = %s,
+                                       refresh_token = %s,
+                                       token_expires_on = %s
+                                 WHERE app_name = 'patreon'"""
+
+                        cur.execute(sql, (
+                            util.encrypt(token['access_token']),
+                            util.encrypt(token['refresh_token']),
+                            int(expires_in) + int(time())
+                        ))
                 return token
     return None
 
 
 # Application wide API calls (require application access token)
-def get_campaigns(db):
-    token = __get_current_token(db)
+def get_campaigns():
+    token = get_current_token()
     client = OAuth2Session(config.patreon.client_id, token=token)
     campaigns_url = config.patreon.api_endpoint + '/campaigns'
     includes = ['tiers']
@@ -147,8 +144,8 @@ def get_campaigns(db):
         client.get(campaigns_url + query).text, object_pairs_hook=OrderedDict))
 
 
-def get_members(db):
-    token = __get_current_token(db)
+def get_members():
+    token = get_current_token()
     client = OAuth2Session(config.patreon.client_id, token=token)
     includes = ['user']
     fields = {
@@ -171,13 +168,13 @@ def get_members(db):
     query = build_query(includes, fields)
     api_endpoint = config.patreon.api_endpoint
     campaign_id = config.patreon.campaign_id
-    members_url = '%s/campaigns/%s/members' % (api_endpoint, campaign_id)
+    members_url = f'{api_endpoint}/campaigns/{campaign_id}/members'
     return sanitize_json(json.loads(
         client.get(members_url + query).text, object_pairs_hook=OrderedDict))
 
 
 # User specific API calls (require user access token)
-def get_current_user(db, oauth_session):
+def get_current_user(oauth_session):
     includes = ['memberships', 'memberships.campaign']
     fields = {
         'user': [

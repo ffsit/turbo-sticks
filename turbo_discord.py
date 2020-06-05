@@ -4,17 +4,19 @@ import json
 from turbo_config import discord
 from turbo_util import print_info
 
-request_header = {'Authorization': 'Bot ' + discord.bot_token}
+request_header = {
+    'Authorization': 'Bot ' + discord.bot_token,
+    'User-Agent': 'TURBOSticks (https://github.com/ffsit/turbo-sticks, 2.2.0)',
+}
 roles = []
 
-endpoint = discord.api_endpoint
-server_id = discord.server_id
+guild_url = f'{discord.api_endpoint}/guilds/{discord.server_id}'
 
 
 def get_member(discord_id):
     if(discord_id is None):
         return None
-    member_url = '%s/guilds/%s/members/%s' % (endpoint, server_id, discord_id)
+    member_url = f'{guild_url}/members/{discord_id}'
     return json.loads(
         requests.get(member_url, headers=request_header).text)
 
@@ -26,7 +28,7 @@ def get_user(discord_member):
 
 
 def get_roles():
-    get_roles_url = '%s/guilds/%s/roles' % (endpoint, server_id)
+    get_roles_url = f'{guild_url}/roles'
     return json.loads(requests.get(get_roles_url, headers=request_header).text)
 
 
@@ -47,15 +49,15 @@ def get_avatar_url(discord_user):
     cdn_url = 'https://cdn.discordapp.com'
 
     if(discord_user is None):
-        return '%s/embed/avatars/1.png' % (cdn_url,)
+        return f'{cdn_url}/embed/avatars/1.png'
 
     avatar_hash = discord_user.get('avatar')
     if avatar_hash is None:
         default_avatar = int(discord_user.get('discriminator', 0)) % 5
-        return '%s/embed/avatars/%s.png' % (cdn_url, default_avatar)
+        return f'{cdn_url}/embed/avatars/{default_avatar}.png'
     else:
         user_id = discord_user['id']
-        return '%s/avatars/%s/%s.png' % (cdn_url, user_id, avatar_hash)
+        return f'{cdn_url}/avatars/{user_id}/{avatar_hash}.png'
 
 
 def render_username(discord_user):
@@ -63,7 +65,7 @@ def render_username(discord_user):
         return '<span class="gray"><i>Not connected</i></span>'
     username = discord_user.get('username', '')
     discriminator = discord_user.get('discriminator', '0000')
-    return '%s<span class="gray">#%s</span>' % (username, discriminator)
+    return f'{username}<span class="gray">#{discriminator}</span>'
 
 
 def render_roles(discord_member):
@@ -77,7 +79,7 @@ def render_roles(discord_member):
 
 # returns True on success
 def add_turbo_role(discord_id, token=None):
-    member_url = '%s/guilds/%s/members/%s' % (endpoint, server_id, discord_id)
+    member_url = f'{guild_url}/members/{discord_id}'
 
     # join the user to the server if not already joined
     if(token is not None):
@@ -87,7 +89,7 @@ def add_turbo_role(discord_id, token=None):
 
     # add member to role
     response = requests.put(
-        '%s/roles/%s' % (member_url, discord.turbo_role_id),
+        f'{member_url}/roles/{discord.turbo_role_id}',
         json={},
         headers=request_header
     )
@@ -97,11 +99,11 @@ def add_turbo_role(discord_id, token=None):
 
 # returns True on success
 def remove_turbo_role(discord_id):
-    member_url = '%s/guilds/%s/members/%s' % (endpoint, server_id, discord_id)
+    member_url = f'{guild_url}/members/{discord_id}'
 
     # check if member exists, if not report success to prevent lock
     response = requests.get(member_url, headers=request_header)
-    error = json.loads(response.text)
+    error = response.json
     if(response.status_code == 404 or error.get('key', 0) == 10007):
         return True
 
@@ -114,6 +116,6 @@ def remove_turbo_role(discord_id):
     if(response.status_code == 204):
         return True
     # if we errored we want to log the error
-    error = json.loads(response.text)
+    error = response.json
     print_info('Discord Error: ' + error.get('message'))
     return False

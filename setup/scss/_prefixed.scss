@@ -85,3 +85,19 @@
 @mixin user-select($property) {
 	@include prefix((user-select: $property), (webkit moz ms));
 }
+
+@mixin scrollbar($thumb_color, $bg_color) {
+	scrollbar-color: $thumb_color $bg_color;
+	&::-webkit-scrollbar {
+		background: transparent;
+	}
+	&::-webkit-scrollbar-thumb {
+		background-color: $thumb_color;
+		border: 3px solid transparent;
+		border-radius: 9px;
+		background-clip: content-box;
+	}
+	&::-webkit-scrollbar-track {
+		background-color: $bg-color;
+	}
+}

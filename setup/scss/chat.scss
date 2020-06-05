@@ -307,16 +307,16 @@ body {
 .role {
 	.icon {
 		vertical-align: middle;
-		background-image: url(https://turbo.chat/content/img/chat_spritesheet_128_scaled.png);
+		background-image: url('/static/chat_spritesheet_128_scaled.png');
 		background-repeat: no-repeat;
 		display: inline-block;
 
 		.halloween & {
-			background-image: url(https://turbo.chat/content/img/chat_spritesheet_halloween_128_scaled.png);
+			background-image: url('/static/chat_spritesheet_halloween_128_scaled.png');
 		}
 
 		.xmas & {
-			background-image: url(https://turbo.chat/content/img/chat_spritesheet_xmas_128_scaled.png);
+			background-image: url('/static/chat_spritesheet_xmas_128_scaled.png');
 		}
 	}
 
@@ -624,32 +624,18 @@ html.frash-show-mode {
 		}
 
 		.message {
-			line-height: 16px;
+			line-height: 16px !important;
 		}
 
 		.role .icon {
-			.large & {
-				width: 32px;
-				height: 32px;
-				background-size: 128px 128px;
-			}
-
-			.mid-size & {
-				width: 24px;
-				height: 24px;
-				background-size: 96px 96px;
-			}
-
-			.small & {
-				width: 16px;
-				height: 16px;
-				background-size: 64px 64px;
-			}
+			width: 16px !important;
+			height: 16px !important;
+			background-size: 64px 64px !important;
 		}
 	} 
 
 	.channel-window .user-entry {
-		line-height: 16px;
+		line-height: 16px !important;
 	}
 
 	.channel-window {

@@ -42,7 +42,7 @@ Setup
 * (optional) Setup Redis with unix socket
 * Setup an App in Mastodon with read:accounts privileges
 * Setup an App in Discord with identify and guilds.join scope
-* Create a Discord Bot and [authorize it](https://discordapp.com/developers/docs/topics/oauth2#bot-authorization-flow) with `CREATE_INSTANT_INVITE`, `MANAGE_ROLES`, `KICK_MEMBERS`, `BAN_MEMBERS`, `MANAGE_MESSAGES`, `VIEW_CHANNEL` and `MANAGE_WEBHOOKS` permissions
+* Create a Discord Bot and [authorize it](https://discordapp.com/developers/docs/topics/oauth2#bot-authorization-flow) with `CREATE_INSTANT_INVITE`, `MANAGE_ROLES`, `KICK_MEMBERS`, `BAN_MEMBERS`, `MANAGE_MESSAGES`, `VIEW_CHANNEL`, `SEND_MESSAGE` and `MANAGE_WEBHOOKS` permissions
 * Adjust settings in `turbo_config.example.py` and rename to `turbo_config.py`
 * Run `retrieve_discord_ids.py` in tools folder to determine your server and role ids
 * Add server id and role id to `turbo_config.py`

@@ -73,7 +73,7 @@ class SticksBot(discord.Client):
         self.redis_loop_lock = asyncio.Lock()
         self.redis_loop.start()
         self.webchat_webhook_lock = asyncio.Lock()
-        self.refresh_webhook.start()
+        self.refresh_webhook_loop.start()
 
     def redis_next_message(self):
         return self.pubsub.parse_response(False)
@@ -110,7 +110,6 @@ class SticksBot(discord.Client):
     async def before_webchat_heartbeat(self):
         await self.wait_until_ready()
 
-    @tasks.loop(seconds=config.discord.webhook_refresh_interval)
     async def refresh_webhook(self):
         async with self.webchat_webhook_lock:
             guild = self.get_guild(int(config.discord.server_id))
@@ -131,7 +130,11 @@ class SticksBot(discord.Client):
                     self.webchat_webhook = webhook
                     break
 
-    @refresh_webhook.before_loop
+    @tasks.loop(seconds=config.discord.webhook_refresh_interval)
+    async def refresh_webhook_loop(self):
+        self.refresh_webhook()
+
+    @refresh_webhook_loop.before_loop
     async def before_refresh_webhook(self):
         await self.wait_until_ready()
 
@@ -145,6 +148,7 @@ class SticksBot(discord.Client):
 
     async def on_guild_available(self, guild):
         if str(guild.id) == config.discord.server_id:
+            await self.refresh_webhook()
             self.redis.delete('discord-online-members')
             members = {}
             for channel in guild.channels:

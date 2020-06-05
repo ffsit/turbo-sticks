@@ -132,7 +132,7 @@ class SticksBot(discord.Client):
 
     @tasks.loop(seconds=config.discord.webhook_refresh_interval)
     async def refresh_webhook_loop(self):
-        self.refresh_webhook()
+        await self.refresh_webhook()
 
     @refresh_webhook_loop.before_loop
     async def before_refresh_webhook(self):

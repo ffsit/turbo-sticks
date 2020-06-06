@@ -841,7 +841,9 @@
 	function on_discord_connect(channel_name, state) {
 		var channel = get_channel(channel_name);
 		channel.discord_members = state['members'];
-		write_info(channel_name, 'Connection to Discord has been restored');
+		if(_show_join_leave_message === true) {
+			write_info(channel_name, 'Connection to Discord has been restored');
+		}
 		redraw_member_list();
 	}
 
@@ -852,7 +854,9 @@
 		for(var key in _channels) {
 			if(_channels.hasOwnProperty(key)) {
 				_channels[key].discord_members = {};
-				write_info(key, message);
+				if(_show_join_leave_message === true) {
+					write_info(key, message);
+				}
 			}
 		}
 		redraw_member_list();

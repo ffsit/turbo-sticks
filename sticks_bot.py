@@ -173,11 +173,6 @@ class SticksBot(discord.Client):
             self.redis.delete('discord-online-members')
             self.webchat_heartbeat.cancel()
 
-    async def on_disconnect(self):
-        await self.publish_event('discord_disconnect')
-        self.redis.delete('discord-online-members')
-        self.webchat_heartbeat.cancel()
-
     def is_relevant_message(self, message):
         return (
             message.type == discord.MessageType.default and
@@ -452,7 +447,7 @@ class SticksBot(discord.Client):
                     self.redis,
                     'webchat-message-history',
                     formatted['id'],
-                    formatted
+                    json.dumps(formatted, separators=(',', ':'))
                 )
 
     async def on_message_delete(self, message):

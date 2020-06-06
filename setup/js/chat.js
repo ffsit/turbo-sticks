@@ -67,7 +67,7 @@
 				return 1;
 			}
 			var a_name = a['username'].toLowerCase();
-			var b_name = a['username'].toLowerCase();
+			var b_name = b['username'].toLowerCase();
 			if(a_name < b_name) {
 				return -1;
 			}
@@ -781,6 +781,13 @@
 	function on_connect(channel_name, member) {
 		var key = get_member_key(member);
 		var channel = get_channel(channel_name);
+		if(
+			_show_join_leave_message === true &&
+			channel.webchat_members[key] === undefined &&
+			channel.discord_members[key] === undefined
+		) {
+			write_info(channel_name, member['username']+' joined #'+channel_name);
+		}
 		if(member['local'] === true) {
 			channel.webchat_members[key] = member;
 		} else if(member['local'] === false) {
@@ -788,9 +795,6 @@
 		}
 		if(_active_channel && channel_name == _active_channel.name) {
 			redraw_member_list();
-		}
-		if(_show_join_leave_message === true) {
-			write_info(channel_name, member['username']+' joined #'+channel_name);
 		}
 	}
 
@@ -805,7 +809,11 @@
 		if(channel_name == _active_channel.name) {
 			redraw_member_list();
 		}
-		if(_show_join_leave_message === true) {
+		if(
+			_show_join_leave_message === true &&
+			channel.webchat_members[key] === undefined &&
+			channel.discord_members[key] === undefined
+		) {
 			write_info(channel_name, member['username']+' left #'+channel_name);
 		}
 	}

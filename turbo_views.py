@@ -590,8 +590,8 @@ def patreon_theatre_callback_view(env, csrf_clerk):
                 status = '307 Temporary Redirect'
                 response_body = ''
                 response_headers = [
-                    util.set_cookie_header('TB_PATREON_SESSION',
-                                           session_token),
+                    util.set_cookie_header('TB_PATREON_SESSION', session_token,
+                                           max_age=config.expiration_interval),
                     ('Location', redirect_to)
                 ]
             else:

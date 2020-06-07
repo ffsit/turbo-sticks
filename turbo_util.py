@@ -84,14 +84,14 @@ def retrieve_cookies(env):
     return cookies
 
 
-def set_cookie_header(name, value, path='/'):
+def set_cookie_header(name, value, path='/',
+                      max_age=config.session_max_age):
     # TODO: Add SameSite parameter. Needs filter for old Safari versions.
     #       See https://bugs.webkit.org/show_bug.cgi?id=198181
     return (
         'Set-Cookie',
         f'{name}={value}; Domain={config.cookie_scope}; '
-        f'Max-Age={config.expiration_interval}; Path={path}; '
-        'Secure; HttpOnly;'
+        f'Max-Age={max_age}; Path={path}; Secure; HttpOnly;'
     )
 
 

@@ -675,6 +675,7 @@
 	function on_connection_timeout() {
 		if(_connected === false && _connecting === true) {
 			set_login_status('Connection timed out');
+			close_socket();
 		}
 	}
 
@@ -713,7 +714,7 @@
 				sticks.chat.connect(webchat_uri, channel_name);
 				toggle_spinner(true);
 				pulse_channel_window(channel_name, true);
-				setTimeout(on_connection_timeout, 5000);
+				setTimeout(on_connection_timeout, 10000);
 				return false;
 			});
 			var tab = document.getElementById('channel-tab-template');
@@ -922,6 +923,16 @@
 			} else if (chat.socket.readyState !== WebSocket.CONNECTING) {
 				chat.socket = null;
 			}
+			clearInterval(_heartbeat);
+			console.log('Chat disconnected.');
+			for(var key in _channels) {
+				var tab = _channels[key].tab;
+				tab.parentNode.removeChild(tab);
+			}
+			_connected = false;
+			_connecting = false;
+			_active_channel = null;
+			_channels = {};
 		}
 	}
 
@@ -1013,22 +1024,14 @@
 			console.error(event);
 		}
 		socket.onclose = function(event) {
-			clearInterval(_heartbeat);
-			console.log('Chat disconnected.');
-			for(var key in _channels) {
-				var tab = _channels[key].tab;
-				tab.parentNode.removeChild(tab);
-			}
-			if(_connected === true) {
+			var was_connected = _connected;
+			var was_connecting = _connecting;
+			close_socket();
+			if(was_connected === true) {
 				set_login_status('Disconnected', 5000);
-			} else if(_connecting === true) {
+			} else if(was_connecting === true) {
 				set_login_status('Failed to reach server');
 			}
-			_connected = false;
-			_connecting = false;
-			_active_channel = null;
-			_channels = {};
-			close_socket();
 			toggle_login_window(true);
 		}
 		chat.socket = socket;

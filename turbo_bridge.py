@@ -64,6 +64,9 @@ def application(env, start_response):
 
 # Cleanup on shutdown
 def shutdown():
+    for channel in channels:
+        channel.close()
+
     db = DBSession()
     if(db is not None):
         db.close()

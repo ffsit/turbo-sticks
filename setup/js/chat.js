@@ -29,15 +29,20 @@
 	var _heartbeat = null;
 	var _connected = false;
 	var _connecting = false;
+	var _resuming = false;
 	var _channels = {};
 	var _active_channel = null;
 	var _show_join_leave_message = false;
 	var _smooth_scroll = true;
+	var _socket_uri = null;
+	var _client_id = null;
 	var _me = null;
 	var _hyperlink_regex = /(\b(https?):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
 	var _nick_color_seed = new Date().getUTCMonth();
 	var _max_history_length = 200;
 	var _send_timeout;
+	var _connect_timeout;
+	var _resume_timeout;
 
 	// Methods
 	function sorted_member_list(channel) {
@@ -679,6 +684,14 @@
 		}
 	}
 
+	function on_resume_timeout() {
+		if(_resuming === true) {
+			set_login_status('Failed to resume chat session');
+			close_socket();
+			cleanup();
+		}
+	}
+
 	// Main code to be executed on every page load
 	function chat() {
 		var loginform = document.getElementById('loginform');
@@ -714,7 +727,7 @@
 				sticks.chat.connect(webchat_uri, channel_name);
 				toggle_spinner(true);
 				pulse_channel_window(channel_name, true);
-				setTimeout(on_connection_timeout, 10000);
+				_connect_timeout = setTimeout(on_connection_timeout, 5000);
 				return false;
 			});
 			var tab = document.getElementById('channel-tab-template');
@@ -727,18 +740,34 @@
 				});
 			}
 		}
+		sticks.on(window, 'beforeunload', disconnect)
 	}
 
 	function send_event(event, data) {
-		var payload = {ev: event}
-		if(data !== undefined) {
-			payload['d'] = data;
+		if(chat.socket && chat.socket.readyState === WebSocket.OPEN) {
+			var payload = {ev: event}
+			if(data !== undefined) {
+				payload['d'] = data;
+			}
+			chat.socket.send(JSON.stringify(payload));
 		}
-		chat.socket.send(JSON.stringify(payload));
 	}
 
 	function send_heartbeat() {
 		send_event('heartbeat');
+	}
+
+	function on_hello(data) {
+		if(_client_id === null) {
+			_client_id = data['client_id'];
+		} else if(_client_id === data['client_id']) {
+			// successful resume
+			_resuming = false;
+			clearTimeout(_resume_timeout);
+		}
+		_connected = true;
+		_connecting = false;
+		clearTimeout(_connect_timeout);
 	}
 
 	function on_message(channel_name, message) {
@@ -769,8 +798,6 @@
 			}
 		}
 		channel.scroll_manager.bottom();
-		_connected = true;
-		_connecting = false;
 		set_login_status();
 		toggle_login_window(false);
 		pulse_channel_window(channel_name, false);
@@ -923,29 +950,34 @@
 			} else if (chat.socket.readyState !== WebSocket.CONNECTING) {
 				chat.socket = null;
 			}
-			clearInterval(_heartbeat);
-			console.log('Chat disconnected.');
+		}
+	}
+
+	function cleanup() {
 			for(var key in _channels) {
 				var tab = _channels[key].tab;
 				tab.parentNode.removeChild(tab);
 			}
-			_connected = false;
-			_connecting = false;
 			_active_channel = null;
 			_channels = {};
-		}
+			_client_id = null;
+			_connected = false;
+			_connecting = false;
+			_resuming = false;
+			toggle_login_window(true);
 	}
 
-	function open_socket(uri, channel_name) {
+	function open_socket(uri, onopen) {
 		if(chat.socket) {
 			return;
 		}
 		var socket = new WebSocket(uri);
-		socket.onopen = function() {
+		onopen = onopen || function() {
 			send_event('connect', channel_name);
 			_heartbeat = setInterval(send_heartbeat, 4000);
 			console.log('Chat connected.');
-		}
+		};
+		socket.onopen = onopen;
 		socket.onmessage = function(event) {
 			var payload = JSON.parse(event.data);
 			var event_name = payload['ev'];
@@ -955,6 +987,10 @@
 			var channel_name = document.getElementById('channel_name');
 			channel_name = channel_name.value;
 			switch(event_name) {
+				case 'hello':
+					on_hello(data);
+					break;
+
 				case 'connection_success':
 					on_connection_success(channel_name, data);
 					break;
@@ -1019,27 +1055,53 @@
 					on_error(data['message'], data['detail']);
 					break;
 			}
-		}
+		};
 		socket.onerror = function(event) {
 			console.error(event);
-		}
+		};
 		socket.onclose = function(event) {
-			var was_connected = _connected;
-			var was_connecting = _connecting;
-			close_socket();
-			if(was_connected === true) {
-				set_login_status('Disconnected', 5000);
-			} else if(was_connecting === true) {
+			if(_connected === true) {
+				clearInterval(_heartbeat);
+				console.log('Chat disconnected.');
+				_connected = false;
+				_connecting = false;
+				resume();
+			} else if(_connecting === true) {
+				clearInterval(_heartbeat);
+				cleanup();
+				console.log('Chat disconnected.');
 				set_login_status('Failed to reach server');
 			}
-			toggle_login_window(true);
-		}
+		};
 		chat.socket = socket;
+	}
+
+	function resume() {
+		if(
+			_resuming === false &&
+			_connected === false &&
+			_connecting === false &&
+			_socket_uri !== null &&
+			_client_id !== null
+		) {
+			_connecting = true;
+			_resuming = true;
+			open_socket(_socket_uri, function() {
+				send_event('resume', {'client_id': _client_id});
+				_heartbeat = setInterval(send_heartbeat, 4000);
+				console.log('Attempting to resume chat session.');
+			});
+			_resume_timeout = setTimeout(on_resume_timeout, 5000);
+			return;
+		}
+		cleanup();
+		set_login_status('Lost connection to server.');
 	}
 
 	function connect(uri, channel_name) {
 		if(_connected === false && _connecting === false) {
 			_connecting = true;
+			_socket_uri = uri;
 			open_socket(uri);
 		}
 	}
@@ -1047,6 +1109,7 @@
 	function disconnect() {
 		if(_connected === true) {
 			send_event('disconnect');
+			cleanup();
 			close_socket();
 			clearTimeout(_send_timeout);
 		}
@@ -1170,6 +1233,7 @@
 	chat.unban = unban;
 	chat.timeout = timeout;
 	chat.help = help;
+	chat.close_socket = close_socket;
 
 	// Create public instance
 	baseObj[name] = chat;

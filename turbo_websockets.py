@@ -4,6 +4,7 @@ import time
 import uwsgi
 import uuid
 import gevent
+from enum import Enum
 from oauthlib.oauth2 import OAuth2Error
 from redis import StrictRedis as Redis
 
@@ -48,24 +49,26 @@ def websocket_job(func=None, *,  on_finish=None):
             try:
                 func(self, *args, **kwargs)
             except ClientTimeout:
+                self.state = ClientState.exited
                 util.print_info('Websocket connection client timeout.')
             except ClientDisconnect:
+                self.state = ClientState.exited
                 util.print_info('Websocket connection client disconnected.')
             except ClientError as error:
+                self.state = ClientState.exited
                 util.print_exception('Websocket client error', error, False,
                                      print_traceback=False)
-            except IOError as error:
-                # Socket Error
-                util.print_exception('Websocket connection closed', error,
-                                     False, print_traceback=False)
             except DBError as error:
                 # Database Error
+                self.state = ClientState.exited
                 util.print_exception('Database Error occured: ', error)
             except OAuth2Error as error:
                 # OAuth 2.0 Error
+                self.state = ClientState.exited
                 util.print_exception('OAuth 2.0 Error occured: ', error)
             except Exception as error:
                 # Unknown Exception
+                self.state = ClientState.exited
                 util.print_exception('Unexpected Error occured: ', error,
                                      False)
             finally:
@@ -86,16 +89,17 @@ class Channel(object):
         self.path = config.websockets_path + path
         self.uri = util.build_url(path, base='websockets')
         self.min_access_level = min_access_level
-        self.clients = set()
+        self.clients = {}
         this.channels.append(self)
 
     def add_client(self, env):
         client = self.client_cls(self, env)
-        self.clients.add(client)
+        self.clients[client.id] = client
         return client
 
     def remove_client(self, client):
-        self.clients.remove(client)
+        if client.id in self.clients.keys():
+            del self.clients[client.id]
 
     @property
     def redis(self):
@@ -119,22 +123,34 @@ class Channel(object):
             self.remove_client(client)
 
     def close(self):
-        for client in self.clients:
+        for client in self.clients.values():
             client.exit()
+
+
+class ClientState(Enum):
+    new = 0
+    started = 1
+    suspended = 2
+    resumed = 3
+    exited = 4
+    merged = 5
 
 
 # Generic passthrough websocket client
 class Client(object):
     def __init__(self, channel, env):
+        self.id = str(uuid.uuid4())
         self.channel = channel
         self.env = env
+        self.fd_select_job = None
         self.jobs = []
         self.event = gevent.event.Event()
+        self.merge_event = gevent.event.Event()
         self.client_send_queue = gevent.queue.Queue()
         self.client_recv_queue = gevent.queue.Queue()
         self.context = None
         self._redis_channel = None
-        self.connected = False
+        self.state = ClientState.new
 
     @property
     def redis(self):
@@ -182,26 +198,41 @@ class Client(object):
 
     @websocket_job
     def _handle_channel_messages(self):
-        while True:
-            message = self.redis_channel().parse_response()
-            if message[0] == b'message':
+        while self.job_state == ClientState.started:
+            message = self.redis_channel().parse_response(block=False,
+                                                          timeout=0.2)
+            if message and message[0] == b'message':
                 self.handle_channel_message(message[2])
+            gevent.sleep(0)
 
     @websocket_job
     def _handle_client_messages(self):
-        while True:
-            message = self.client_recv_queue.get()
-            self.handle_client_message(message)
+        while self.job_state == ClientState.started:
+            try:
+                message = self.client_recv_queue.get(timeout=0.2)
+                self.handle_client_message(message)
+            except gevent.queue.Empty:
+                pass
+            gevent.sleep(0)
 
-    def _fd_select(self, fd):
-        while True:
+    def _fd_select(self):
+        while self.state == ClientState.started:
             self.event.set()
             # for some reason any other method of checking fails
             try:
-                gevent.select.select([fd], [], [])[0]
-            except ValueError:
-                self.exit()
+                gevent.select.select([self.websocket_fd], [], [])[0]
+            except (ValueError, OSError):
                 break
+
+    def spawn_jobs(self):
+        self.job_state = ClientState.started
+        self.jobs.extend([
+            gevent.spawn(self._handle_client_messages),
+            gevent.spawn(self._handle_channel_messages),
+        ])
+
+        for job in self.jobs:
+            job.link(self.exit)
 
     @websocket_job(on_finish='cleanup')
     def start(self):
@@ -210,7 +241,7 @@ class Client(object):
             raise ClientError('Insufficient privileges.')
 
         uwsgi.websocket_handshake()
-        websocket_fd = uwsgi.connection_fd()
+        self.websocket_fd = uwsgi.connection_fd()
         util.print_info('Opening websocket connection', False)
 
         client_count = self.redis.get('websocket-clients')
@@ -219,47 +250,77 @@ class Client(object):
             if client_count >= config.websockets_max_clients:
                 raise ClientError('No available slots.')
         self.redis.incr('websocket-clients')
-        self.connected = True
+        self.state = ClientState.started
 
-        self.jobs.extend([
-            gevent.spawn(self._fd_select, websocket_fd),
-            gevent.spawn(self._handle_client_messages),
-            gevent.spawn(self._handle_channel_messages),
-        ])
+        self.fd_select_job = gevent.spawn(self._fd_select)
+        self.spawn_jobs()
+        self.main_loop()
 
-        for job in self.jobs:
-            job.link(self.exit)
+    def resume(self, client):
+        self.kill_jobs()
+        self.channel.remove_client(self)
+        self.id = client.id
+        self.client_send_queue = client.client_send_queue
+        self.client_recv_queue = client.client_recv_queue
+        self.context = client.context
+        client.state = ClientState.merged
+        client.merge_event.set()
+        gevent.sleep(0.1)
+        self.spawn_jobs()
+        util.print_info('Websocket session resumed.', False)
+        gevent.sleep(0.1)
+        self.channel.clients[self.id] = self
 
-        while self.connected:
-            ready = self.event.wait(3.0)
-            self.event.clear()
-            message = uwsgi.websocket_recv_nb()
+    def main_loop(self):
+        while self.state == ClientState.started:
+            self.event.wait(3.0)
+            try:
+                message = uwsgi.websocket_recv_nb()
+            except IOError:
+                if self.state == ClientState.started:
+                    self.state = ClientState.suspended
+                break
             if message:
                 self.client_recv_queue.put_nowait(message)
 
             # push client messages to client
-            while ready:
-                try:
-                    message = self.client_send_queue.get(block=False)
-                    uwsgi.websocket_send(message)
-                except gevent.queue.Empty:
-                    break
-            gevent.sleep(0)
-        gevent.joinall(self.jobs)
-        util.print_info('Websocket connection closed.')
+            try:
+                message = self.client_send_queue.get(block=False)
+                uwsgi.websocket_send(message)
+            except gevent.queue.Empty:
+                # no more messages, so we can clear the event
+                self.event.clear()
 
-    def exit(self, *args):
+    def kill_jobs(self):
         for job in self.jobs:
             job.unlink(self.exit)
+        self.job_state = ClientState.exited
+        gevent.sleep(0.1)
+        self.jobs = []
 
-        gevent.killall(self.jobs)
-        self.connected = False
-
-    def cleanup(self):
+    def exit(self, *args):
+        self.kill_jobs()
         if self.context:
             self.redis.decr('websocket-clients')
         self.channel.remove_client(self)
+        self.state = ClientState.exited
+
+    def cleanup(self):
+        if self.fd_select_job:
+            self.fd_select_job.kill()
+        util.print_info('Websocket connection lost.', False)
         uwsgi.disconnect()
+        if self.state == ClientState.suspended:
+            # wait an amount of time to be picked up for resume
+            self.merge_event.wait(60.0)
+
+        if self.state == ClientState.merged:
+            util.print_info('Merging websocket session to resume.', False)
+        else:
+            util.print_info('Websocket session killed.',  False)
+
+        if self.state != ClientState.exited:
+            self.exit()
 
 
 ACL_rank_map = {
@@ -275,6 +336,10 @@ ACL_rank_map = {
 
 class DiscordClient(Client):
     heartbeat_interval = 4.0
+
+    def resume(self, client):
+        super().resume(client)
+        self.hello()
 
     def init_context(self):
         super().init_context()
@@ -319,6 +384,9 @@ class DiscordClient(Client):
         message = json.dumps(payload, separators=(',', ':'))
         getattr(self, destination + '_publish')(message)
 
+    def hello(self):
+        self.publish_event('hello', {'client_id': self.id})
+
     def ack(self, info=None):
         self.publish_event('ack', {'info': info} if info else {})
 
@@ -334,7 +402,10 @@ class DiscordClient(Client):
             if isinstance(payload, dict) and payload.get('ev'):
                 event = payload['ev']
                 data = payload.get('d', {})
-                if not self.context['connected'] and event != 'connect':
+                if not self.context['connected'] and event not in [
+                    'connect',
+                    'resume',
+                ]:
                     self.error('You are not connected.')
                     return
                 self.dispatch_event(event, data)
@@ -404,7 +475,24 @@ class DiscordClient(Client):
             return member['discord_id']
         return member['username']
 
+    def on_resume(self, data):
+        client = self.channel.clients.get(data['client_id'])
+        if not client:
+            raise ClientError('Could not resume session.')
+        # resume disconnected client
+        util.print_info(
+            f'{self.context["username"]} resuming connection to webchat.')
+        self.context['heartbeat'] = time.time()
+        self.redis.hincrby(
+            'webchat-clients',
+            self.webchat_user_key(self.context),
+            1
+        )
+        self.resume(client)
+
     def on_connect(self, data=None):
+        if self.context.get('connected', False) is False:
+            self.hello()
         util.print_info(f'{self.context["username"]} connected to webchat.')
         self.context['heartbeat'] = time.time()
         client_count = self.redis.hincrby(
@@ -685,7 +773,7 @@ class DiscordClient(Client):
         del data['username']
         return self.on_unban_member(data)
 
-    def cleanup(self):
+    def exit(self, *args):
         if self.context and 'username' in self.context:
             client_count = self.redis.hincrby(
                 'webchat-clients',
@@ -693,13 +781,17 @@ class DiscordClient(Client):
                 -1
             )
             # last client publishes disconnect
-            if client_count < 1:
+            if client_count <= 0:
                 self.publish_event(
                     'disconnect',
                     self.format_user(self.context),
                     'channel'
                 )
+                self.redis.hdel(
+                    'webchat-clients',
+                    self.webchat_user_key(self.context)
+                )
             self.redis.hdel('webchat-online-members', self.context['username'])
-        super().cleanup()
+        super().exit(*args)
 
 Channel(DiscordClient, config.discord.live_channel, '/webchat')

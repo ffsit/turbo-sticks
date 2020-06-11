@@ -764,6 +764,9 @@
 			// successful resume
 			_resuming = false;
 			clearTimeout(_resume_timeout);
+			if(_active_channel) {
+				enable_lower_ui(_active_channel.tab, true);
+			}
 		}
 		_connected = true;
 		_connecting = false;
@@ -1084,6 +1087,9 @@
 			_socket_uri !== null &&
 			_client_id !== null
 		) {
+			if(_active_channel) {
+				enable_lower_ui(_active_channel.tab, false);
+			}
 			_connecting = true;
 			_resuming = true;
 			open_socket(_socket_uri, function() {

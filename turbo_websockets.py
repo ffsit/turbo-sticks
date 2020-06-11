@@ -1,4 +1,5 @@
 import sys
+import logging
 import json
 import time
 import uwsgi
@@ -16,6 +17,9 @@ from turbo_db import DBError
 from turbo_user import ACL, User
 
 this = sys.modules[__name__]
+
+# Logger
+logger = logging.getLogger('sticks.wss')
 
 # Channels
 this.channels = []
@@ -46,36 +50,42 @@ class ClientTimeout(ClientError):
 def websocket_job(func=None, *,  on_finish=None):
     def decorator(func):
         def decorated_function(self, *args, **kwargs):
+            logger.debug(
+                f'<Client {self.id}> Started greenlet {func.__name__}.'
+            )
             try:
                 func(self, *args, **kwargs)
             except ClientTimeout:
                 self.state = ClientState.exited
-                util.print_info('Websocket connection client timeout.')
+                logger.info(f'<Client {self.id}> Client timeout.')
             except ClientDisconnect:
                 self.state = ClientState.exited
-                util.print_info('Websocket connection client disconnected.')
+                logger.info(f'<Client {self.id}> Client disconnected.')
             except ClientError as error:
                 self.state = ClientState.exited
-                util.print_exception('Websocket client error', error, False,
-                                     print_traceback=False)
-            except DBError as error:
+                logger.warning(f'<Client {self.id}> Client error: {error}')
+            except DBError:
                 # Database Error
                 self.state = ClientState.exited
-                util.print_exception('Database Error occured: ', error)
+                logger.exception('Database error occured.')
             except OAuth2Error as error:
                 # OAuth 2.0 Error
                 self.state = ClientState.exited
-                util.print_exception('OAuth 2.0 Error occured: ', error)
+                logger.info(f'OAuth 2.0 error occured: {error}',
+                            exc_info=config.debug_mode)
             except Exception as error:
                 # Unknown Exception
                 self.state = ClientState.exited
-                util.print_exception('Unexpected Error occured: ', error,
-                                     False)
+                logger.exception(
+                    f'<Client {self.id}> Unexpected error occured: {error}')
             finally:
                 if callable(on_finish):
                     on_finish()
                 elif isinstance(on_finish, str) and hasattr(self, on_finish):
                     getattr(self, on_finish)()
+                logger.debug(
+                    f'<Client {self.id}> Finished greenlet {func.__name__}.'
+                )
         return decorated_function
     return decorator(func) if callable(func) else decorator
 
@@ -107,11 +117,11 @@ class Channel(object):
             try:
                 self._redis.ping()
             except ConnectionError:
-                util.print_info('Lost connection to Redis.', False)
+                logger.warning('Lost connection to Redis.')
                 del self._redis
         if self._redis is None:
             self._redis = Redis.from_url(config.redis_uri)
-            util.print_info('Connecting to Redis...', False)
+            logger.info('Connecting to Redis...')
         return self._redis
 
     def open_websocket(self, env):
@@ -119,12 +129,13 @@ class Channel(object):
             client = self.add_client(env)
             client.start()
         except ClientError as error:
-            util.print_exception('Failed to init websocket client.', error)
+            logger.warning(f'Failed to init websocket client: {error}')
             self.remove_client(client)
 
     def close(self):
         for client in self.clients.values():
             client.exit()
+        gevent.sleep(1.0)
 
 
 class ClientState(Enum):
@@ -198,7 +209,10 @@ class Client(object):
 
     @websocket_job
     def _handle_channel_messages(self):
-        while self.job_state == ClientState.started:
+        while self.job_state != ClientState.exited:
+            if self.job_state == ClientState.suspended:
+                gevent.sleep(0.2)
+                continue
             message = self.redis_channel().parse_response(block=False,
                                                           timeout=0.2)
             if message and message[0] == b'message':
@@ -207,7 +221,7 @@ class Client(object):
 
     @websocket_job
     def _handle_client_messages(self):
-        while self.job_state == ClientState.started:
+        while self.job_state != ClientState.exited:
             try:
                 message = self.client_recv_queue.get(timeout=0.2)
                 self.handle_client_message(message)
@@ -231,9 +245,6 @@ class Client(object):
             gevent.spawn(self._handle_channel_messages),
         ])
 
-        for job in self.jobs:
-            job.link(self.exit)
-
     @websocket_job(on_finish='cleanup')
     def start(self):
         self.init_context()
@@ -242,7 +253,7 @@ class Client(object):
 
         uwsgi.websocket_handshake()
         self.websocket_fd = uwsgi.connection_fd()
-        util.print_info('Opening websocket connection', False)
+        logger.info(f'<Client {self.id}> Opening websocket connection')
 
         client_count = self.redis.get('websocket-clients')
         if client_count:
@@ -257,7 +268,8 @@ class Client(object):
         self.main_loop()
 
     def resume(self, client):
-        self.kill_jobs()
+        self.job_state = ClientState.suspended
+        gevent.sleep(0.2)
         self.channel.remove_client(self)
         self.id = client.id
         self.client_send_queue = client.client_send_queue
@@ -265,10 +277,9 @@ class Client(object):
         self.context = client.context
         client.state = ClientState.merged
         client.merge_event.set()
-        gevent.sleep(0.1)
-        self.spawn_jobs()
-        util.print_info('Websocket session resumed.', False)
-        gevent.sleep(0.1)
+        gevent.sleep(0.2)
+        self.job_state = ClientState.started
+        logger.info(f'<Client {self.id}> Websocket session resumed.')
         self.channel.clients[self.id] = self
 
     def main_loop(self):
@@ -292,35 +303,36 @@ class Client(object):
                 self.event.clear()
 
     def kill_jobs(self):
-        for job in self.jobs:
-            job.unlink(self.exit)
         self.job_state = ClientState.exited
-        gevent.sleep(0.1)
+        gevent.sleep(0.2)
         self.jobs = []
 
-    def exit(self, *args):
+    def exit(self):
+        self.state = ClientState.exited
+        self.kill_jobs()
+
+    def on_kill(self):
         self.kill_jobs()
         if self.context:
             self.redis.decr('websocket-clients')
         self.channel.remove_client(self)
-        self.state = ClientState.exited
 
     def cleanup(self):
         if self.fd_select_job:
             self.fd_select_job.kill()
-        util.print_info('Websocket connection lost.', False)
+        logger.info(f'<Client {self.id}> Websocket connection lost.')
         uwsgi.disconnect()
         if self.state == ClientState.suspended:
             # wait an amount of time to be picked up for resume
             self.merge_event.wait(60.0)
 
         if self.state == ClientState.merged:
-            util.print_info('Merging websocket session to resume.', False)
+            logger.info(
+                f'<Client {self.id}> Merging websocket session to resume.')
         else:
-            util.print_info('Websocket session killed.',  False)
+            logger.info(f'<Client {self.id}> Websocket session killed.')
 
-        if self.state != ClientState.exited:
-            self.exit()
+        self.on_kill()
 
 
 ACL_rank_map = {
@@ -410,7 +422,8 @@ class DiscordClient(Client):
                     return
                 self.dispatch_event(event, data)
         except (json.JSONDecodeError, KeyError):
-            util.print_info('Received invalid websockets payload.')
+            logger.debug(
+                f'<Client {self.id}> Received invalid websockets payload.')
 
     def handle_channel_message(self, message):
         if self.context.get('connected', False):
@@ -428,7 +441,8 @@ class DiscordClient(Client):
                             # doesn't concern us
                             return
             except (json.JSONDecodeError, KeyError):
-                util.print_info('Received invalid channel payload.')
+                logger.debug(
+                    f'<Client {self.id}> Received invalid channel payload.')
             self.client_publish(message)
 
     def format_user(self, context):
@@ -450,7 +464,7 @@ class DiscordClient(Client):
         if hasattr(self, handler):
             getattr(self, handler)(data)
         else:
-            util.print_info('Received invalid event.')
+            logger.debug(f'<Client {self.id}> Received invalid event.')
 
     def get_online_members(self):
         webchat_members = {
@@ -480,8 +494,10 @@ class DiscordClient(Client):
         if not client:
             raise ClientError('Could not resume session.')
         # resume disconnected client
-        util.print_info(
-            f'{self.context["username"]} resuming connection to webchat.')
+        logger.debug(
+            f'<Client {self.id}> {self.context["username"]} resuming '
+            'connection to webchat.'
+        )
         self.context['heartbeat'] = time.time()
         self.redis.hincrby(
             'webchat-clients',
@@ -493,7 +509,10 @@ class DiscordClient(Client):
     def on_connect(self, data=None):
         if self.context.get('connected', False) is False:
             self.hello()
-        util.print_info(f'{self.context["username"]} connected to webchat.')
+        logger.debug(
+            f'<Client {self.id}> {self.context["username"]} '
+            'connected to webchat.'
+        )
         self.context['heartbeat'] = time.time()
         client_count = self.redis.hincrby(
             'webchat-clients',
@@ -522,11 +541,18 @@ class DiscordClient(Client):
         self.context['connected'] = True
 
     def on_disconnect(self, data=None, timeout=False):
+        logger.debug(
+            f'<Client {self.id}> {self.context["username"]} '
+            'disconnected from webchat.'
+        )
         raise ClientDisconnect()
 
     def on_heartbeat(self, data=None):
         self.context['heartbeat'] = time.time()
-        util.print_info(f'Received heartbeat from {self.context["username"]}.')
+        logger.debug(
+            f'<Client {self.id}> Received heartbeat from '
+            f'{self.context["username"]}.'
+        )
 
     def on_message(self, data):
         user = self.context['user']
@@ -534,6 +560,7 @@ class DiscordClient(Client):
         avatar_url = self.context['avatar_url']
         # check if user has been banned
         if user.is_banned():
+            self.error('You have been banned.')
             raise ClientError('You have been banned.')
 
         # check if user has been timed out
@@ -556,7 +583,7 @@ class DiscordClient(Client):
             return
 
         # push to channel
-        util.print_info(f'{username} says: {data["content"]}')
+        logger.debug(f'<Client {self.id}> {username} says: {data["content"]}')
         message = {
             'id': str(uuid.uuid4()),
             'content': data['content'],
@@ -773,7 +800,7 @@ class DiscordClient(Client):
         del data['username']
         return self.on_unban_member(data)
 
-    def exit(self, *args):
+    def on_kill(self):
         if self.context and 'username' in self.context:
             client_count = self.redis.hincrby(
                 'webchat-clients',
@@ -791,7 +818,10 @@ class DiscordClient(Client):
                     'webchat-clients',
                     self.webchat_user_key(self.context)
                 )
-            self.redis.hdel('webchat-online-members', self.context['username'])
-        super().exit(*args)
+                self.redis.hdel(
+                    'webchat-online-members',
+                    self.webchat_user_key(self.context)
+                )
+        super().on_kill()
 
 Channel(DiscordClient, config.discord.live_channel, '/webchat')

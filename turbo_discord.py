@@ -1,8 +1,11 @@
+import logging
 import requests
 import json
 
 from turbo_config import discord
-from turbo_util import print_info
+
+# Logger
+logger = logging.getLogger('sticks.discord')
 
 request_header = {
     'Authorization': 'Bot ' + discord.bot_token,
@@ -117,5 +120,5 @@ def remove_turbo_role(discord_id):
         return True
     # if we errored we want to log the error
     error = response.json
-    print_info('Discord Error: ' + error.get('message'))
+    logger.warning('Discord Error: ' + error.get('message'))
     return False

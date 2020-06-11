@@ -1,12 +1,17 @@
 import sys
+import logging
 from oauthlib.oauth2 import OAuth2Error
 
 import turbo_session
+import turbo_config as config
 import turbo_util as util
 from turbo_db import DBError, DBSession
 from turbo_user import ACL, User
 
 this = sys.modules[__name__]
+
+# Logger
+logger = logging.getLogger('sticks.api')
 
 # API calls
 this.api_calls = {}
@@ -20,22 +25,23 @@ def api_call(path):
             try:
                 response, status = func(env, csrf_clerk)
                 return util.generate_json_response(response, status)
-            except DBError as error:
+            except DBError:
                 # Database Error
-                util.print_exception('Database Error occured:', error)
+                logger.exception('Database Error occured.')
                 return util.generate_json_response(
                     {'error': 'A database error has occured.'},
                     '500 Internal Server Error'
                 )
             except OAuth2Error as error:
                 # OAuth 2.0 Error
-                util.print_exception('OAuth 2.0 Error occured:', error)
+                logger.info(f'OAuth 2.0 Error occured: {error}',
+                            exc_info=config.debug_mode)
                 return util.generate_json_response(
                     {'error': 'Failed to complete OAuth 2.0 handshake.'}
                 )
-            except Exception as error:
+            except Exception:
                 # Unknown Exception
-                util.print_exception('Unexpected Error occured:', error, False)
+                logger.exception('Unexpected Error occured')
                 return util.generate_json_response(
                     {'error': 'An unexpected error has occured.'},
                     '500 Internal Server Error'

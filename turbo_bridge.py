@@ -1,21 +1,35 @@
+# Monkey Patching
 from gevent import monkey
-monkey.patch_all()
+monkey.patch_all()  # NOQA
 
-import atexit
+import logging
+import uwsgi
 
 # Local Imports
 import turbo_csrf
 from turbo_db import DBSession
-from turbo_config import base_path, api_path, websockets_path
+from turbo_config import base_path, api_path, websockets_path, debug_mode
 from turbo_util import generate_json_response
 from turbo_ajax import api_calls
 from turbo_views import turbo_views, error_view
 from turbo_websockets import channels, init_redis_state
 
+# Setup logging
+logging.basicConfig(
+    format='[%(asctime)s] %(levelname)-8s - %(name)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+    style='%',
+    level=logging.DEBUG if debug_mode else logging.INFO,
+)
+logger = logging.getLogger('sticks')
+logger.info('Initialized logger.')
+
 # CSRF Protection
+logger.info('Initializing CSRF Clerk.')
 csrf_clerk = turbo_csrf.TokenClerk()
 
 # Initialize state stored in Redis
+logger.info('Initializing Redis state.')
 init_redis_state()
 
 
@@ -64,12 +78,16 @@ def application(env, start_response):
 
 # Cleanup on shutdown
 def shutdown():
+    logger.info('Closing active websockets for shutdown.')
     for channel in channels:
         channel.close()
 
+    logger.info('Closing active DB connection.')
     db = DBSession()
-    if(db is not None):
+    if db and db.is_alive():
         db.close()
 
+    logger.info('Finished shutdown.')
 
-atexit.register(shutdown)
+
+uwsgi.atexit = shutdown

@@ -1,4 +1,5 @@
 import sys
+import logging
 import json
 import random
 from oauthlib.oauth2 import OAuth2Error
@@ -15,6 +16,9 @@ from turbo_properties import get_property, set_property
 from turbo_user import ACL, User
 
 this = sys.modules[__name__]
+
+# Logger
+logger = logging.getLogger('sticks.views')
 
 # Views
 turbo_views = {}
@@ -58,21 +62,22 @@ def view(func=None, *, nav='error', headless=False):
             try:
                 response_body, response_headers, status = func(env, csrf_clerk)
 
-            except DBError as error:
+            except DBError:
                 # Database Error
-                util.print_exception('Database Error occured:', error)
+                logger.exception('Database Error occured.')
                 return error_view('Database Error',
                                   'A database error has occured.',
                                   nav, '500 Internal Server Error', headless)
             except OAuth2Error as error:
                 # OAuth 2.0 Error
-                util.print_exception('OAuth 2.0 Error occured:', error)
+                logger.info(f'OAuth 2.0 Error occured: {error}',
+                            exc_info=config.debug_mode)
                 return error_view('OAuth Error',
                                   'Failed to complete OAuth 2.0 handshake.',
                                   nav, status, headless)
-            except Exception as error:
+            except Exception:
                 # Unknown Exception
-                util.print_exception('Unexpected Error occured:', error, False)
+                logger.exception('Unexpected Error occured.')
                 return error_view('Unknown Error',
                                   'An unexpected error has occured.',
                                   nav, '500 Internal Server Error', headless)
@@ -170,8 +175,8 @@ def error_view(title, detail, nav='error', status='200 OK', headless=False,
 
     # In case we encounter an error in rendering the error view
     # we'd like to report it
-    except Exception as error:
-        util.print_exception('Unexpected Error occured: ', error, False)
+    except Exception:
+        logger.exception('Unexpected Error occured.')
         return '', '', '500 Internal Server Error'
 
 
@@ -293,7 +298,8 @@ def oauth_callback_view(env, csrf_clerk):
 
     except OAuth2Error as error:
         # Might indicate a "deny" on granting access to the app
-        util.print_exception('OAuth 2.0 Error occured: ', error)
+        logger.info(f'OAuth 2.0 Error occured: {error}',
+                    exc_info=config.debug_mode)
         return error_view('OAuth Error',
                           'Failed to authorize account, try again.')
     else:
@@ -356,7 +362,8 @@ def discord_callback_view(env, get_vars, post_vars, csrf_clerk, session, user):
 
     except OAuth2Error as error:
         # Might indicate a "deny" on granting access to the app
-        util.print_exception('OAuth 2.0 Error occured: ', error)
+        logger.info(f'OAuth 2.0 Error occured: {error}',
+                    exc_info=config.debug_mode)
         return error_view('OAuth Error',
                           'Failed to authorize Discord account, try again.',
                           access_level=access_level)
@@ -604,7 +611,8 @@ def patreon_theatre_callback_view(env, csrf_clerk):
 
     except OAuth2Error as error:
         # Might indicate a "deny" on granting access to the app
-        util.print_exception('OAuth 2.0 Error occured: ', error)
+        logger.info(f'OAuth 2.0 Error occured: {error}',
+                    exc_info=config.debug_mode)
         return error_view('OAuth Error',
                           'Failed to authorize Patreon account, try again.')
     else:

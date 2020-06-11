@@ -1,5 +1,3 @@
-import sys
-import traceback
 import json
 import http
 from Crypto.Cipher import AES
@@ -15,30 +13,6 @@ import turbo_config as config
 escape
 quote_plus
 urlencode
-
-
-# General Helpers
-def print_info(info, debug_message=True, **kwargs):
-    if not debug_message or config.debug_mode:
-        print('========================================')
-        print(info)
-        print('========================================')
-
-
-def print_exception(title, exception, debug_message=True, **kwargs):
-    if not debug_message or config.debug_mode:
-        print('========================================')
-        print(title)
-        print(exception)
-        print_traceback = kwargs.get('print_traceback', True)
-        if print_traceback or config.debug_mode:
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            traceback.print_tb(exc_traceback)
-        print('========================================')
-
-
-def sub_title(sub_title, title=config.page_title):
-    return sub_title + ' - ' + title
 
 
 # Crypto Helpers
@@ -61,6 +35,10 @@ def decrypt(ciphertext):
 
 
 # Web Server Helpers
+def sub_title(sub_title, title=config.page_title):
+    return f'{sub_title} - {title}'
+
+
 def retrieve_get_vars(env):
     return parse_qs(env['QUERY_STRING'], encoding='utf-8')
 

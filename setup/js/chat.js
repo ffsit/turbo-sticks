@@ -778,6 +778,9 @@
 	}
 
 	function on_broadcast(message) {
+		if(_me && _me['rank'] === 'crew') {
+			return;
+		}
 		for(var key in _channels) {
 			if(_channels.hasOwnProperty(key)) {
 				write_message(_channels[key].name, message, 'broadcast');

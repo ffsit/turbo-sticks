@@ -106,7 +106,7 @@ def remove_turbo_role(discord_id):
 
     # check if member exists, if not report success to prevent lock
     response = requests.get(member_url, headers=request_header)
-    error = response.json
+    error = response.json()
     if(response.status_code == 404 or error.get('key', 0) == 10007):
         return True
 
@@ -119,6 +119,6 @@ def remove_turbo_role(discord_id):
     if(response.status_code == 204):
         return True
     # if we errored we want to log the error
-    error = response.json
+    error = response.json()
     logger.warning('Discord Error: ' + error.get('message'))
     return False

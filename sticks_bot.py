@@ -79,7 +79,11 @@ class SticksBot(discord.Client):
         self.redis_loop_lock = asyncio.Lock()
         self.redis_loop.start()
         self.webchat_webhook_lock = asyncio.Lock()
+        self.webchat_message_count = 0
         self.refresh_webhook_loop.start()
+        self.rate_limited_messages = asyncio.Queue()
+        self.dump_rate_limited_messages.start()
+        self.reset_rate_limit_loop.start()
 
     def redis_next_message(self):
         return self.pubsub.parse_response(False)
@@ -144,6 +148,35 @@ class SticksBot(discord.Client):
     async def before_refresh_webhook(self):
         await self.wait_until_ready()
 
+    @tasks.loop(seconds=15)
+    async def dump_rate_limited_messages(self):
+        async with self.webchat_webhook_lock:
+            if self.live_channel_id:
+                channel = self.get_channel(self.live_channel_id)
+                messages = []
+                while not self.rate_limited_messages.empty():
+                    try:
+                        message = self.rate_limited_messages.get_nowait()
+                        messages.append(message)
+                        self.rate_limited_messages.task_done()
+                    except asyncio.QueueEmpty:
+                        break
+                if messages:
+                    messages = '\n'.join(
+                        [f'**{u}**\u2000{m}' for u, m in messages])
+                    await channel.send(
+                        f'Rate limited webchat messages:\n>>> {messages}')
+                self.webchat_message_count += 1
+
+    @dump_rate_limited_messages.before_loop
+    async def before_dump_rate_limited_messages(self):
+        await self.wait_until_ready()
+
+    @tasks.loop(seconds=60)
+    async def reset_rate_limit_loop(self):
+        async with self.webchat_webhook_lock:
+            self.webchat_message_count = 0
+
     async def publish_event(self, event, data={}):
         payload = {
             'ev': event,
@@ -206,8 +239,12 @@ class SticksBot(discord.Client):
         if username[-5:-4] != '#':
             username += config.discord.webchat_user_suffix
         async with self.webchat_webhook_lock:
-            await self.webchat_webhook.send(content, username=username,
-                                            avatar_url=avatar_url)
+            if self.webchat_message_count < 26:
+                self.webchat_message_count += 1
+                await self.webchat_webhook.send(content, username=username,
+                                                avatar_url=avatar_url)
+            else:
+                self.rate_limited_messages.put_nowait((username, content))
 
     async def on_webchat_broadcast(self, username, avatar_url, content):
         if username[-5:-4] != '#':
@@ -218,7 +255,9 @@ class SticksBot(discord.Client):
             embed = discord.Embed(description=content, colour=0xe74c3c)
             embed.set_author(name=username,
                              icon_url=avatar_url)
-            await channel.send('Webchat Broadcast:', embed=embed)
+            with self.webchat_webhook_lock:
+                self.webchat_message_count += 1
+                await channel.send('Webchat Broadcast:', embed=embed)
 
     async def on_webchat_whisper(self, target_id, username, avatar_url, rank,
                                  content):
@@ -347,7 +386,9 @@ class SticksBot(discord.Client):
             embed = discord.Embed(description=argstr, colour=0xe74c3c)
             embed.set_author(name=member.display_name,
                              icon_url=member.avatar_url)
-            await channel.send('Webchat Broadcast:', embed=embed)
+            with self.webchat_webhook_lock:
+                self.webchat_message_count += 1
+                await channel.send('Webchat Broadcast:', embed=embed)
             formatted = {
                     'id': str(uuid.uuid4()),
                     'channel': 'broadcast',

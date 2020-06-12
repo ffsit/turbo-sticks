@@ -43,6 +43,7 @@
 	var _send_timeout;
 	var _connect_timeout;
 	var _resume_timeout;
+	var _resume_count = 0;
 
 	// Methods
 	function sorted_member_list(channel) {
@@ -763,6 +764,7 @@
 		} else if(_client_id === data['client_id']) {
 			// successful resume
 			_resuming = false;
+			_resume_count = 0;
 			clearTimeout(_resume_timeout);
 			if(_active_channel) {
 				enable_lower_ui(_active_channel.tab, true);
@@ -970,6 +972,7 @@
 			_connected = false;
 			_connecting = false;
 			_resuming = false;
+			_resume_count = 0;
 			toggle_login_window(true);
 	}
 
@@ -1066,7 +1069,7 @@
 			console.error(event);
 		};
 		socket.onclose = function(event) {
-			if(_connected === true) {
+			if(_connected === true || _resuming === true) {
 				clearInterval(_heartbeat);
 				console.log('Chat disconnected.');
 				_connected = false;
@@ -1080,11 +1083,12 @@
 			}
 		};
 		chat.socket = socket;
+		return socket.readyState !== WebSocket.CLOSED;
 	}
 
 	function resume() {
 		if(
-			_resuming === false &&
+			_resume_count < 5 &&
 			_connected === false &&
 			_connecting === false &&
 			_socket_uri !== null &&
@@ -1093,13 +1097,23 @@
 			if(_active_channel) {
 				enable_lower_ui(_active_channel.tab, false);
 			}
+			clearTimeout(_resume_timeout);
 			_connecting = true;
 			_resuming = true;
-			open_socket(_socket_uri, function() {
-				send_event('resume', {'client_id': _client_id});
-				_heartbeat = setInterval(send_heartbeat, 4000);
-				console.log('Attempting to resume chat session.');
-			});
+			_resume_count += 1;
+
+			setTimeout(function() {
+				console.log('Attempting to resume chat session...');
+				var success = open_socket(_socket_uri, function() {
+					send_event('resume', {'client_id': _client_id});
+					_heartbeat = setInterval(send_heartbeat, 4000);
+				});
+				if(!success) {
+					_connected = false;
+					_connecting = false;
+					resume();
+				}
+			}, 200*_resume_count);
 			_resume_timeout = setTimeout(on_resume_timeout, 5000);
 			return;
 		}

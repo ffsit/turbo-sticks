@@ -117,7 +117,7 @@ def retrieve_oauth_account(session):
         if token is not None:
             refresh_token_if_necessary(token)
             oauth = OAuth2Session(mastodon.client_id, token=token)
-            account = json.loads(oauth.get(mastodon.get_account_url).text)
+            account = oauth.get(mastodon.get_account_url).json()
             # Don't authenticate moved accounts, federated accounts or bots
             if(int(account.get('id', '0')) > 0 and
                account.get('moved') is None and

@@ -329,7 +329,7 @@ def discord_callback_view(env, get_vars, post_vars, csrf_clerk, session, user):
                 authorization_response=authorization_response,
                 client_secret=config.discord.client_secret
             )
-            discord_user = json.loads(oauth.get(discord_user_url).text)
+            discord_user = oauth.get(discord_user_url).json()
             if discord_user is not None and discord_user.get('id') is not None:
                 # If people link their discord to another account,
                 # the old one should lose its turbo role

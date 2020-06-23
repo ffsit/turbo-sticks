@@ -693,6 +693,8 @@ set_nav_external_item('toot', 'TURBO Toot',
                       'https://toot.turbo.chat')
 set_nav_external_item('discourse', 'TURBO Discourse',
                       'https://discourse.turbo.chat')
+set_nav_external_item('discord', 'VGA Discord',
+                      'https://discord.gg/zFx3knd')
 set_nav_item('rules')
 set_nav_item('logout', min_access_level=ACL.turbo)
 

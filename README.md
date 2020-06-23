@@ -58,6 +58,8 @@ Upgrade
 
 Change Log
 -----------
+#### 2.3.1
+Removed legacy chat. Websocket webchat is now considered stable.
 #### 2.3.0
 Added a websockets webchat with a discord bot to talk to. Removed Python 3.5 support.
 #### 2.2.0

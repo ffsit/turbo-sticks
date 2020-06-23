@@ -368,11 +368,11 @@ class SticksBot(discord.Client):
         )
 
     async def command_online(self, member, argstr):
-        webchat_members = [
-            json.loads(v.decode('utf-8'))['username'].capitalize()
+        members = [
+            json.loads(v.decode('utf-8'))['username']
             for v in self.redis.hgetall('webchat-online-members').values()
         ]
-        member_list = '\n'.join(webchat_members)
+        member_list = '\n'.join([m[0:1].upper()+m[1:] for m in members])
         await member.send(f'Online Webchat users:```\n{member_list}```')
 
     async def command_broadcast(self, member, argstr):

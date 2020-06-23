@@ -966,6 +966,7 @@
 				var tab = _channels[key].tab;
 				tab.parentNode.removeChild(tab);
 			}
+			clearTimeout(_resume_timeout);
 			_active_channel = null;
 			_channels = {};
 			_client_id = null;

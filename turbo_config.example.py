@@ -1,3 +1,4 @@
+# flake8: noqa
 # Actual configuration needs to be named turbo_config.py
 from types import SimpleNamespace
 

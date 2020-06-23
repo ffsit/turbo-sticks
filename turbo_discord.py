@@ -17,7 +17,7 @@ guild_url = f'{discord.api_endpoint}/guilds/{discord.server_id}'
 
 
 def get_member(discord_id):
-    if(discord_id is None):
+    if discord_id is None:
         return None
     member_url = f'{guild_url}/members/{discord_id}'
     return json.loads(
@@ -25,7 +25,7 @@ def get_member(discord_id):
 
 
 def get_user(discord_member):
-    if(discord_member is None):
+    if discord_member is None:
         return None
     return discord_member.get('user')
 
@@ -37,12 +37,12 @@ def get_roles():
 
 def get_role(role_id):
     global roles
-    if(roles is None or len(roles) == 0):
+    if roles is None or len(roles) == 0:
         roles = get_roles()
-        if(roles is None):
+        if roles is None:
             roles = []
     for role in roles:
-        if(role.get('id') == role_id):
+        if role.get('id') == role_id:
             return role
     return {'color': 0, 'name': ''}
 
@@ -51,7 +51,7 @@ def get_role(role_id):
 def get_avatar_url(discord_user):
     cdn_url = 'https://cdn.discordapp.com'
 
-    if(discord_user is None):
+    if discord_user is None:
         return f'{cdn_url}/embed/avatars/1.png'
 
     avatar_hash = discord_user.get('avatar')
@@ -64,7 +64,7 @@ def get_avatar_url(discord_user):
 
 
 def render_username(discord_user):
-    if(discord_user is None):
+    if discord_user is None:
         return '<span class="gray"><i>Not connected</i></span>'
     username = discord_user.get('username', '')
     discriminator = discord_user.get('discriminator', '0000')
@@ -72,7 +72,7 @@ def render_username(discord_user):
 
 
 def render_roles(discord_member):
-    if(discord_member is None or discord_member.get('roles') is None):
+    if discord_member is None or discord_member.get('roles') is None:
         return ''
     return '&emsp;'.join(
         '<span style="color:#%(color)X">%(name)s</span>' %
@@ -85,7 +85,7 @@ def add_turbo_role(discord_id, token=None):
     member_url = f'{guild_url}/members/{discord_id}'
 
     # join the user to the server if not already joined
-    if(token is not None):
+    if token is not None:
         join_payload = {'access_token': token['access_token']}
         requests.put(
             member_url, json=join_payload, headers=request_header)
@@ -107,7 +107,7 @@ def remove_turbo_role(discord_id):
     # check if member exists, if not report success to prevent lock
     response = requests.get(member_url, headers=request_header)
     error = response.json()
-    if(response.status_code == 404 or error.get('key', 0) == 10007):
+    if response.status_code == 404 or error.get('key', 0) == 10007:
         return True
 
     # remove member from role
@@ -116,7 +116,7 @@ def remove_turbo_role(discord_id):
         headers=request_header
     )
 
-    if(response.status_code == 204):
+    if response.status_code == 204:
         return True
     # if we errored we want to log the error
     error = response.json()

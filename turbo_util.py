@@ -84,7 +84,7 @@ def unset_cookie_header(name, path='/'):
 
 
 def basic_response_header(response_body, send_length=True):
-    if(send_length):
+    if send_length:
         return [
             ('Content-Type', 'text/html'),
             ('Content-Length', str(len(response_body)))
@@ -103,13 +103,13 @@ def generate_json_response(data, status='200 OK'):
 
 
 def get_default_embed(sources):
-    if(len(sources) > 0 and sources[0]['embed_type'] == 'html'):
+    if len(sources) > 0 and sources[0]['embed_type'] == 'html':
         return sources[0]['embed']
     return ''
 
 
 def generate_video_sources(sources):
-    if(len(sources) > 0):
+    if len(sources) > 0:
         return json.dumps(sources)
     return '[]'
 

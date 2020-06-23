@@ -1,6 +1,5 @@
 import sys
 import logging
-import json
 import random
 from oauthlib.oauth2 import OAuth2Error
 
@@ -27,7 +26,7 @@ turbo_views = {}
 class turbo_view:
     def __init__(self, display_name, path=None, view=None, uri=None):
         self.display_name = display_name
-        if(uri is None and path is not None):
+        if uri is None and path is not None:
             uri = util.build_url(path, base='base')
         if path is not None:
             path = config.base_path + path
@@ -103,16 +102,15 @@ def auth_view(func=None, *, nav='error', min_access_level=ACL.turbo,
 
             # Start OAuth
             cookie_set = int(get_vars.get('cookie_set', [0])[0])
-            # Failed to set cookie, tell user to enable cookies
-            if(account is None and min_access_level >= ACL.turbo and
-               cookie_set == 1):
-                return error_view('Login Error',
-                                  'Failed to create session. Try to enable '
-                                  ' cookies for this site.')
+            if account is None and min_access_level >= ACL.turbo:
+                if cookie_set == 1:
+                    # Failed to set cookie, tell user to enable cookies
+                    return error_view('Login Error',
+                                      'Failed to create session. Try to '
+                                      'enable cookies for this site.')
 
-            elif(account is None and min_access_level >= ACL.turbo):
                 # Show Auth Error in headless mode
-                if(headless):
+                if headless:
                     return error_view('Auth Error', 'You are not logged in.',
                                       nav, headless=True)
 
@@ -131,7 +129,7 @@ def auth_view(func=None, *, nav='error', min_access_level=ACL.turbo,
                 response_headers = [('Location', str(authorization_url))]
 
             # Redirect to url without cookie_set parameter
-            elif(cookie_set == 1):
+            elif cookie_set == 1:
                 status = '307 Temporary Redirect'
                 response_body = ''
                 response_headers = [
@@ -165,7 +163,7 @@ def error_view(title, detail, nav='error', status='200 OK', headless=False,
         page_data['nav'] = turbo_nav.generate_html(nav,
                                                    access_level=access_level)
 
-        if(headless):
+        if headless:
             response_body = templates.render('error_headless', page_data)
         else:
             response_body = templates.render('error', page_data)
@@ -192,8 +190,8 @@ def main_view(env, csrf_clerk):
     account = turbo_session.retrieve_oauth_account(session)
 
     # Couldn't auth based on session. Start fresh OAuth 2.0 handshake
-    if(account is None):
-        if(session is not None):
+    if account is None:
+        if session is not None:
             redirect_uri = turbo_views['oauth-callback'].uri
             oauth = turbo_session.OAuth2Session(
                 config.mastodon.client_id,
@@ -267,8 +265,8 @@ def oauth_callback_view(env, csrf_clerk):
         oauth_state = turbo_session.retrieve_oauth_state(
             get_vars.get('state', [''])[0]
         )
-        if(oauth_state and
-           csrf_clerk.validate('oauth-authorization', oauth_state[0])):
+        if oauth_state and csrf_clerk.validate('oauth-authorization',
+                                               oauth_state[0]):
             token = oauth.fetch_token(
                 config.mastodon.token_url,
                 authorization_response=authorization_response,
@@ -276,7 +274,7 @@ def oauth_callback_view(env, csrf_clerk):
             )
             session_token = turbo_session.create_session(token)
 
-            if(session_token is not None):
+            if session_token is not None:
                 redirect_to = str(oauth_state[1])
                 if redirect_to.startswith('/'):
                     redirect_to = util.build_url(redirect_to,
@@ -322,8 +320,8 @@ def discord_callback_view(env, get_vars, post_vars, csrf_clerk, session, user):
         oauth_state = turbo_session.retrieve_oauth_state(
             get_vars.get('state', [''])[0]
         )
-        if(oauth_state and
-           csrf_clerk.validate('oauth-authorization', oauth_state[0])):
+        if oauth_state and csrf_clerk.validate('oauth-authorization',
+                                               oauth_state[0]):
             token = oauth.fetch_token(
                 config.discord.token_url,
                 authorization_response=authorization_response,
@@ -333,15 +331,15 @@ def discord_callback_view(env, get_vars, post_vars, csrf_clerk, session, user):
             if discord_user is not None and discord_user.get('id') is not None:
                 # If people link their discord to another account,
                 # the old one should lose its turbo role
-                if(user.discord_id is not None and
-                   user.discord_id != int(discord_user['id'])):
-                    if(not discord.remove_turbo_role(user.discord_id)):
+                discord_id = int(discord_user['id'])
+                if user.discord_id and user.discord_id != discord_id:
+                    if not discord.remove_turbo_role(user.discord_id):
                         return error_view('Unexpected error',
                                           'Failed to reassign TURBO status to '
                                           'a different Discord account. '
                                           'Please try again.')
-                user.set_discord_id(discord_user['id'])
-                discord.add_turbo_role(user.discord_id, token)
+                user.set_discord_id(discord_id)
+                discord.add_turbo_role(discord_id, token)
 
                 redirect_to = str(oauth_state[1])
                 if redirect_to.startswith('/'):
@@ -376,9 +374,9 @@ def discord_callback_view(env, get_vars, post_vars, csrf_clerk, session, user):
 def account_view(env, get_vars, post_vars, csrf_clerk, session, user):
     page_data = basic_page_data('account')
     # Reset app_password if requested
-    if(int(post_vars.get('reset_app_password', [0])[0]) == 1):
+    if post_vars.get('reset_app_password', [0])[0] == '1':
         csrf_token = post_vars.get('csrf_token', [''])[0]
-        if(csrf_clerk.validate(session, csrf_token)):
+        if csrf_clerk.validate(session, csrf_token):
             # silently failing on an invalid token is fine here
             user.reset_app_password()
     status = '200 OK'
@@ -551,15 +549,15 @@ def patreon_theatre_callback_view(env, csrf_clerk):
         oauth_state = turbo_session.retrieve_oauth_state(
             get_vars.get('state', [''])[0]
         )
-        if(oauth_state and
-           csrf_clerk.validate('oauth-authorization', oauth_state[0])):
+        if oauth_state and csrf_clerk.validate('oauth-authorization',
+                                               oauth_state[0]):
             oauth.fetch_token(
                 config.patreon.token_url,
                 authorization_response=authorization_response,
                 client_secret=config.patreon.client_secret
             )
             patreon_user = patreon.get_current_user(oauth)
-            if(patreon_user is not None and len(patreon_user) > 0):
+            if patreon_user is not None and len(patreon_user) > 0:
                 memberships = patreon_user[0].get('memberships', [])
                 session_token = None
                 for item in memberships:
@@ -569,7 +567,7 @@ def patreon_theatre_callback_view(env, csrf_clerk):
                        campaign_id == config.patreon.campaign_id):
                         session_token = patreon.create_session()
 
-                if(session_token is None):
+                if session_token is None:
                     dollars = str(config.patreon.theatre_cents // 100)
                     return error_view('Insufficient pledge',
                                       'We could not verify that you are '

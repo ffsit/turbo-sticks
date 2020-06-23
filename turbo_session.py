@@ -11,7 +11,7 @@ from turbo_util import retrieve_get_vars, encrypt, decrypt
 # Session Store
 def create_session(oauth_token):
     db = DBSession()
-    if(db is not None):
+    if db is not None:
         with db.connection as conn:
             with conn.cursor() as cur:
                 session_token = generate_random_token(128)
@@ -50,7 +50,7 @@ def create_session(oauth_token):
 
 def delete_session(session_token):
     db = DBSession()
-    if(db is not None and session_token is not None):
+    if db is not None and session_token is not None:
         with db.connection as conn:
             with conn.cursor() as cur:
                 sql = """
@@ -63,7 +63,7 @@ def delete_session(session_token):
 
 def retrieve_token_from_session(session_token):
     db = DBSession()
-    if(db is not None):
+    if db is not None:
         with db.connection as conn:
             with conn.cursor() as cur:
                 sql = """
@@ -77,7 +77,7 @@ def retrieve_token_from_session(session_token):
 
                 cur.execute(sql, (session_token,))
                 row = cur.fetchone()
-                if(row is None):
+                if row is None:
                     return None
 
                 result = {
@@ -106,7 +106,7 @@ def refresh_token_if_necessary(token):
 def get_session(env):
     cookies = retrieve_cookies(env)
     session_cookie = cookies.get('TB_SESSION')
-    if(session_cookie):
+    if session_cookie:
         return session_cookie.value
     return None
 

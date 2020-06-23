@@ -27,15 +27,15 @@ def create_session():
 def validate_session(env):
     cookies = util.retrieve_cookies(env)
     session_cookie = cookies.get('TB_PATREON_SESSION')
-    if(session_cookie is None):
+    if session_cookie is None:
         # No Session Cookie set
         return False
     session_token = session_cookie.value
     creation_time = this.sessions.get(session_token)
-    if(creation_time is None):
+    if creation_time is None:
         # Session doesn't exist
         return False
-    if(creation_time + config.expiration_interval > time()):
+    if creation_time + config.expiration_interval > time():
         # Session does exist and is still valid
         return True
     # Session expired, so delete it
@@ -46,7 +46,7 @@ def validate_session(env):
 # Store initial oauth parameters, if not already stored
 def init_oauth():
     db = DBSession()
-    if(db is not None):
+    if db is not None:
         with db.connection as conn:
             with conn.cursor() as cur:
                 access_token = util.encrypt(config.patreon.access_token)
@@ -72,7 +72,7 @@ def init_oauth():
 
 def get_current_token():
     db = DBSession()
-    if(db is not None):
+    if db is not None:
         with db.connection as conn:
             with conn.cursor() as cur:
                 sql = """
@@ -90,17 +90,17 @@ def get_current_token():
                     'token_type': 'Bearer',
                     'token_expires_in': '3000'
                 }
-                if(row is None):
+                if row is None:
                     init_oauth(db)
                 else:
                     token['access_token'] = util.decrypt(row[0])
                     token['refresh_token'] = util.decrypt(row[1])
-                    if(row[2] is not None):
+                    if row[2] is not None:
                         token['token_expires_in'] = str(row[2] - int(time()))
                     else:
                         token['token_expires_in'] = -1
 
-                if(int(token['token_expires_in']) < 0):
+                if int(token['token_expires_in']) < 0:
                     client = OAuth2Session(config.patreon.client_id,
                                            token=token)
                     new_token = client.refresh_token(
@@ -204,30 +204,30 @@ def get_current_user(oauth_session):
 # Builds a query string for JSON:API includes=list(), fields=dict(key,list())
 def build_query(includes, fields):
     query = '?'
-    if(isinstance(includes, list) and len(includes) > 0):
+    if isinstance(includes, list) and len(includes) > 0:
         query += 'include=' + ','.join(includes) + '&'
 
-    if(isinstance(fields, dict)):
+    if isinstance(fields, dict):
         field_queries = []
         for key, item in fields.items():
-            if(isinstance(item, list) and len(item) > 0):
+            if isinstance(item, list) and len(item) > 0:
                 field_queries.append('fields[' + key + ']=' + ','.join(item))
         query += '&'.join(field_queries)
     return util.quote_plus(query, '?=&')
 
 
-# Disregards and strips pagination/links
+# NOTE: Disregards and strips pagination/links
 def sanitize_json(json):
-    if('errors' in json):
+    if 'errors' in json:
         return json
 
-    if('data' not in json):
+    if 'data' not in json:
         raise AttributeError('Malformed JSON:API content.')
 
     result = []
     data = json['data']
     included = json.get('included')
-    if(not isinstance(data, list)):
+    if not isinstance(data, list):
         data = [data]
     for entry in data:
         result.append(__flatten_json_entry(entry, included))
@@ -236,18 +236,18 @@ def sanitize_json(json):
 
 
 def __flatten_json_entry(entry, included):
-    if(not isinstance(entry, dict)):
+    if not isinstance(entry, dict):
         return entry
 
     result = OrderedDict()
     result['type'] = entry['type']
     result['id'] = entry['id']
-    if('attributes' in entry):
+    if 'attributes' in entry:
         result.update(entry['attributes'])
-    if('relationships' in entry):
+    if 'relationships' in entry:
         for key, item in entry['relationships'].items():
             entries = item['data']
-            if(not isinstance(entries, list)):
+            if not isinstance(entries, list):
                 entries = [entries]
             result[key] = []
             for item in entries:

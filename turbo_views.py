@@ -425,7 +425,6 @@ def headless_chat_view(env, get_vars, post_vars, csrf_clerk, session, user):
     page_data = basic_page_data('chat-headless')
     page_data['frash_mode'] = ''
     page_data['rules_uri'] = turbo_views['rules'].path
-    page_data['legacy_uri'] = turbo_views['legacy-chat-headless'].path
     page_data['rand_spinner'] = str(random.randint(1, 5))
     page_data['webchat_uri'] = util.build_url('/webchat', 'websockets')
     page_data['live_channel'] = config.discord.live_channel
@@ -440,26 +439,11 @@ def frash_chat_view(env, get_vars, post_vars, csrf_clerk, session, user):
     page_data = basic_page_data('frash-chat')
     page_data['frash_mode'] = 'frash-show-mode'
     page_data['rules_uri'] = turbo_views['rules'].path
-    page_data['legacy_uri'] = turbo_views['legacy-chat-headless'].path
     page_data['rand_spinner'] = str(random.randint(1, 5))
     page_data['webchat_uri'] = util.build_url('/webchat', 'websockets')
     page_data['live_channel'] = config.discord.live_channel
     status = '200 OK'
     response_body = templates.render('chat_headless', page_data)
-    response_headers = util.basic_response_header(response_body)
-    return response_body, response_headers, status
-
-
-@auth_view(headless=True)
-def headless_legacy_chat_view(env, get_vars, post_vars, csrf_clerk, session,
-                              user):
-    page_data = basic_page_data('legacy-chat-headless')
-    page_data['rules_uri'] = turbo_views['rules'].path
-    page_data['rand_spinner'] = str(random.randint(1, 5))
-    page_data['username'] = user.username if user is not None else ''
-    page_data['password'] = user.app_password_plain if user is not None else ''
-    status = '200 OK'
-    response_body = templates.render('legacy_chat_headless', page_data)
     response_headers = util.basic_response_header(response_body)
     return response_body, response_headers, status
 
@@ -651,9 +635,6 @@ turbo_views['discord-callback'] = turbo_view(
 )
 turbo_views['chat-headless'] = turbo_view(
     'TURBO Chat', '/chat-headless', headless_chat_view
-)
-turbo_views['legacy-chat-headless'] = turbo_view(
-    'TURBO Chat', '/legacy-chat-headless', headless_legacy_chat_view
 )
 turbo_views['chat'] = turbo_view(
     'TURBO Chat', '/chat', chat_view

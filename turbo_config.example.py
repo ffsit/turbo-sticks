@@ -55,9 +55,9 @@ discord.webhook_refresh_interval = 60*60
 discord.webchat_user_suffix = '@turbo.chat'
 
 # Discord API nodes
-discord.authorize_url = 'https://discordapp.com/api/oauth2/authorize'
-discord.token_url = 'https://discordapp.com/api/oauth2/token'
-discord.api_endpoint = 'https://discordapp.com/api/v6'
+discord.authorize_url = 'https://discord.com/api/oauth2/authorize'
+discord.token_url = 'https://discord.com/api/oauth2/token'
+discord.api_endpoint = 'https://discord.com/api/v6'
 
 # Patreon OAuth 2.0 Setup Vars
 patreon = SimpleNamespace()

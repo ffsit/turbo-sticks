@@ -9,7 +9,7 @@ logger = logging.getLogger('sticks.discord')
 
 request_header = {
     'Authorization': 'Bot ' + discord.bot_token,
-    'User-Agent': 'TURBOSticks (https://github.com/ffsit/turbo-sticks, 2.2.0)',
+    'User-Agent': 'TURBOSticks (https://github.com/ffsit/turbo-sticks, 2.3.1)',
 }
 roles = []
 

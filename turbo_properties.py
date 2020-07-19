@@ -38,7 +38,7 @@ def set_property(key, value):
         with db.connection as conn:
             with conn.cursor() as cur:
                 sql = ''
-                if get_property(db, key, None) is None:
+                if get_property(key, None) is None:
                     # Insert
                     sql = """
                             INSERT INTO properties

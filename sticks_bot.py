@@ -255,7 +255,7 @@ class SticksBot(discord.Client):
             embed = discord.Embed(description=content, colour=0xe74c3c)
             embed.set_author(name=username,
                              icon_url=avatar_url)
-            with self.webchat_webhook_lock:
+            async with self.webchat_webhook_lock:
                 self.webchat_message_count += 1
                 await channel.send('Webchat Broadcast:', embed=embed)
 
@@ -386,7 +386,7 @@ class SticksBot(discord.Client):
             embed = discord.Embed(description=argstr, colour=0xe74c3c)
             embed.set_author(name=member.display_name,
                              icon_url=member.avatar_url)
-            with self.webchat_webhook_lock:
+            async with self.webchat_webhook_lock:
                 self.webchat_message_count += 1
                 await channel.send('Webchat Broadcast:', embed=embed)
             formatted = {

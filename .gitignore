@@ -7,3 +7,5 @@
 /turbo_config.py
 *.pyc
 /setup/js/local_compile.sh
+*.sublime-project
+*.sublime-workspace

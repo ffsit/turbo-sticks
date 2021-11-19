@@ -24,7 +24,7 @@ For production use:
   * requests
   * requests_oauthlib
   * psycopg2
-  * pycrypto
+  * pycryptodome
 * PostgreSQL
 * Redis
 

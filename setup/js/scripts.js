@@ -283,10 +283,7 @@
 			});
 
 			main.vsrc.map(function(video, index){
-				// only add non-oven-player sources in legacy player
-				if(video.embed_type.substr(0,5) !== 'oven-') {
-					select[select.length] = new Option(video.label, index, false, select.length === 0);
-				}
+				select[select.length] = new Option(video.label, index, false, select.length === 0);
 			});
 
 			on(select, 'change', function() {
@@ -296,34 +293,12 @@
 			// init first video
 			choose_video_source(0, player);
 		}
-
-		// stream source selection (oven-player)
-		var ovenplayer = document.getElementById('ovenplayer');
-
-		if(ovenplayer)
-		{
-			var oven_sources = vsrc.filter(function(video){
-				return video.embed_type.substr(0,5) == 'oven-';
-			}).map(function(video){
-				return {
-					type: video.embed_type.substr(5),
-					file: video.embed,
-					label: video.label
-				};
-			});
-			main.ovenplayer = OvenPlayer.create('ovenplayer', {
-				autoStart: true,
-				image: '/static/movienight.png',
-				sources: oven_sources
-			});
-		}
 	}
 
 	// Static Members
 	main.notification = null;
 	main.vsrc = null;
 	main.cur_video_source = null;
-	main.ovenplayer = null;
 
 	// Public Static Methods
 	main.ajax_post = ajax_post;

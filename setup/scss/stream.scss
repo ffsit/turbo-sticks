@@ -48,12 +48,6 @@ body {
 	width: 100%;
 	background: $player-bg-color;
 	overflow: hidden;
-
-	&.oven {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-	}
 }
 
 #player-frame {

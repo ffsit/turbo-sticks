@@ -1,4 +1,4 @@
-TURBO Sticks Account Management
+TURBO Sticks ![Tests](https://github.com/ffsit/turbo-sticks/actions/workflows/tests.yml/badge.svg) [![codecov](https://codecov.io/gh/ffsit/turbo-sticks/branch/master/graph/badge.svg?token=FwmwmUFWnq)](https://codecov.io/gh/ffsit/turbo-sticks) [![security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://github.com/PyCQA/bandit)
 ===========
 
 This authentication bridge authenticates against an OAuth 2.0 provider to present users with member only functionalities.
@@ -7,7 +7,7 @@ This authentication bridge authenticates against an OAuth 2.0 provider to presen
 
 NOTES
 -----------
-* This web application utilizes uwsgi with Python 3.5+ and uses PostgreSQL as its database backend.
+* This web application utilizes uwsgi with Python 3.10+ and uses PostgreSQL as its database backend.
 * The static content will have to be served using nginx or another HTTP server of your liking, preferably with builtin WSGI support so uWSGI can talk to the proxy using the WSGI protocol, rather than the HTTP protocol.
 * The web application may currently not be thread safe, so it is recommended to run it using a single uWSGI worker.
 
@@ -15,27 +15,19 @@ Requirements
 -----------
 For production use:
 * A HTTP server with WSGI support (e.g. nginx)
-* uWSGI
-* Python 3.6+
-  * discord
-  * gevent
-  * oauthlib
-  * redis
-  * requests
-  * requests_oauthlib
-  * psycopg2
-  * pycryptodome
-* PostgreSQL
+* uWSGI (including greenlet and gevent plugin)
+* Python 3.10+ (including development headers for building psycopg)
+* PostgreSQL (including development headers for building psycopg)
 * Redis
 
 For compiling static CSS and JS resources:
-* sassc
-* css-purge
-* uglifyjs2
+* [sassc](https://github.com/sass/sassc)
+* [css-purge](https://github.com/rbtech/css-purge)
+* [uglifyjs3](https://github.com/ckfinder/UglifyJS2)
 
 Setup
 -----------
-* Install all the requirements
+* Install using `pip install .[bot,uwsgi]`
 * Run `setup.sh` in folder `setup` to generate the JS and CSS
 * Configure nginx to serve /static and forward wsgi on `/<app path>` and `/<api path>`
 * Setup Postgres database and user for use with turbo sticks. Run `initdb.sql` to initialize tables
@@ -43,12 +35,12 @@ Setup
 * Setup an App in Mastodon with read:accounts privileges
 * Setup an App in Discord with identify and guilds.join scope
 * Create a Discord Bot and [authorize it](https://discordapp.com/developers/docs/topics/oauth2#bot-authorization-flow) with `CREATE_INSTANT_INVITE`, `MANAGE_ROLES`, `KICK_MEMBERS`, `BAN_MEMBERS`, `MANAGE_MESSAGES`, `VIEW_CHANNEL`, `SEND_MESSAGE` and `MANAGE_WEBHOOKS` permissions
-* Adjust settings in `turbo_config.example.py` and rename to `turbo_config.py`
-* Run `retrieve_discord_ids.py` in tools folder to determine your server and role ids
-* Add server id and role id to `turbo_config.py`
-* Run `turbo_bridge.py` using uWSGI
-* (optional) Setup cronjob to run `turbo_cron.py` daily
-* (optional) Run `sticks_bot.py` to add discord integration to webchat
+* Adjust settings in `turbo-config.example.yaml` and rename to `turbo-config.yaml`
+* Run `retrieve-discord-ids` to determine your server and role ids
+* Add server id and role id to `turbo-config.yaml`
+* Run `turbo-sticks.wsgi` using uWSGI
+* (optional) Setup cronjob to run `sticks-cron` daily
+* (optional) Run `sticks-bot` to add discord integration to webchat
 
 Upgrade
 -----------
@@ -58,10 +50,15 @@ Upgrade
 
 Change Log
 -----------
+#### 3.0.0
+Properly packaged sticks.
+Added type annotations and tests.
+Removed Python <3.10 support.
 #### 2.3.1
 Removed legacy chat. Websocket webchat is now considered stable.
 #### 2.3.0
-Added a websockets webchat with a discord bot to talk to. Removed Python 3.5 support.
+Added a websockets webchat with a discord bot to talk to.
+Removed Python 3.5 support.
 #### 2.2.0
 Added ACl and admin view to manage AWESOME Piece Theatre password and stream source
 #### 2.1.0

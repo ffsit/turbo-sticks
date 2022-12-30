@@ -1,0 +1,71 @@
+{
+    "data": [
+        {
+            "attributes": {
+                "creation_name": "TURBO Sticks"
+            },
+            "id": "1",
+            "type": "campaign",
+            "relationships": {
+                "tiers": {
+                    "data": [
+                        {
+                            "id": "10",
+                            "type": "tier"
+                        },
+                        {
+                            "id": "11",
+                            "type": "tier"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "attributes": {
+                "creation_name": "VGA"
+            },
+            "id": "2",
+            "type": "campaign",
+            "relationships": {
+                "tiers": {
+                    "data": [{
+                        "id": "20",
+                        "type": "tier"
+                    }]
+                }
+            }
+        }
+    ],
+    "included": [
+        {
+            "attributes": {
+                "title": "Tip Jar",
+                "amount_cents": 100
+            },
+            "id": "10",
+            "type": "tier"
+        },
+        {
+            "attributes": {
+                "title": "Large Tip Jar",
+                "amount_cents": 500
+            },
+            "id": "11",
+            "type": "tier"
+        },
+        {
+            "attributes": {
+                "title": "AWESOME Piece Theatre",
+                "amount_cents": 500
+            },
+            "id": "20",
+            "type": "tier"
+        }
+    ],
+    "meta": {
+        "pagination": {
+            "total": 2
+        }
+    }
+}

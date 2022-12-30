@@ -1,0 +1,67 @@
+{
+    "data": {
+        "attributes": {
+            "full_name": "John Doe",
+            "vanity": "johndoe",
+            "email": "john.doe@example.com",
+            "is_email_verified": true,
+            "image_url": "https://patreon.com/avatars/johndoe.png"
+        },
+        "id": "1",
+        "type": "user",
+        "relationships": {
+            "memberships": {
+                "data": [
+                    {
+                        "id": "10",
+                        "type": "member"
+                    },
+                    {
+                        "id": "11",
+                        "type": "member"
+                    }
+                ]
+            }
+        }
+    },
+    "included": [
+        {
+            "attributes": {
+                "last_charge_date": "2020-10-10 10:00:00",
+                "last_charge_status": "Paid",
+                "lifetime_support_cents": 1000,
+                "currently_entitled_amount_cents": 500,
+                "patron_status": "active_patron"
+            },
+            "id": "10",
+            "type": "member",
+            "relationships": {
+                "campaign": {
+                    "data": {
+                        "id": "100",
+                        "type": "campaign"
+                    }
+                }
+            }
+        },
+        {
+            "attributes": {
+                "last_charge_date": null,
+                "last_charge_status": null,
+                "lifetime_support_cents": 0,
+                "currently_entitled_amount_cents": 0,
+                "patron_status": null
+            },
+            "id": "11",
+            "type": "member",
+            "relationships": {
+                "campaign": {
+                    "data": {
+                        "id": "110",
+                        "type": "campaign"
+                    }
+                }
+            }
+        }
+    ]
+}

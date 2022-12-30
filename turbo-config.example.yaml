@@ -1,0 +1,115 @@
+---  # Actual config should be named turbo-config.yaml
+web_uri: sticks.turbo.chat
+web_scheme: https
+page_title: TURBO Sticks
+page_description: TURBO Sticks is an authentication bridge between various
+               .. TURBO services.
+app_secret: itsasecret  # Secret used for crypto
+base_path: ''
+api_path: /api  # JSON calls, local only for now
+websockets:
+    path: /websockets
+    scheme: wss
+    max_clients: 90  # this should be lower than the number of gevent workers
+redis_uri: unix:///var/run/redis/redis.sock
+static_dir: /var/www/turbo.chat/static  # absolute path to static dir
+debug_mode: false
+
+# ACL
+special_users:
+    nulani: admin
+    FarFromSubtle: crew
+    MissBlow: crew
+
+# Mastodon OAuth 2.0 Setup Vars
+mastodon:
+    client_id: your mastodon apps client id
+    client_secret: your mastodon apps client secret
+    scope:
+        - read:accounts
+
+    # Mastodon API nodes
+    authorize_url: https://toot.turbo.chat/oauth/authorize
+    token_url: https://toot.turbo.chat/oauth/token
+    get_account_url: https://toot.turbo.chat/api/v1/accounts/verify_credentials
+
+# Webchat
+webchat:
+    history_ttl: 7200  # message history goes back up to 2 hours
+    history_length: 50  # message history goes back up to 50 messages
+    timeout_duration: 300  # timeouts in webchat last 5 minutes
+
+# Discord OAuth 2.0 Setup Vars
+discord:
+    client_id: your discord apps client id
+    client_secret: your discord apps client secret
+    scope:
+        - identify
+        - guilds.join
+
+    # Discord Bot (requires CREATE_INSTANT_INVITE|MANAGE_ROLES permissions)
+    bot_token: your bots access token
+    live_channel: live_chat
+
+    # Discord Server Information (you can use retrieve_discord_ids.py)
+    server_id: your server/guild id
+    turbo_role_id: your turbo role id
+    webhook_refresh_interval: 3600
+    webchat_user_suffix: '@turbo.chat'
+
+    # Discord API nodes
+    authorize_url: https://discord.com/api/oauth2/authorize
+    token_url: https://discord.com/api/oauth2/token
+    api_endpoint: https://discord.com/api/v6
+
+# Patreon OAuth 2.0 Setup Vars
+patreon:
+    client_id: your patreon apps client id
+    client_secret: your patreon apps client secret
+    scope:
+        - identity
+        - identity[email]
+
+    # Patreon creator's access token (only for initial setup)
+    access_token: your patreon creators access token
+    refresh_token: your patreon creators refresh token
+
+    # Patreon API nodes
+    authorize_url: https://www.patreon.com/oauth2/authorize
+    token_url: https://www.patreon.com/api/oauth2/token
+    api_endpoint: https://www.patreon.com/api/oauth2/v2
+
+    # Patreon IDs (can be determined with the help of retrieve_patreon_ids)
+    campaign_id: your patreon campaign id
+
+    # Patreon minimum pledge amount for theatre access in cents
+    theatre_cents: 500
+
+    # Patreon session max age
+    session_max_age: 3600
+
+# DB Pool
+db_pool:
+    uri: postgresql://turbo:ttturbo@127.0.0.1/turbo_bridge
+    min_size: 4
+    max_size: 8  # 2*#cores we assume data is pretty much always in cache
+    max_idle: 600  # Close idle connections after 10 minutes
+    max_age: 3600  # Refresh connection after at most 1 hour
+
+# CSRF Protection
+csrf:
+    expiration_interval: 3600  # 1 hour
+    flush_interval: 300  # Flush expired tokens every 5 minutes
+
+# Sessions
+session:
+    max_age: 604800  # 1 Week
+    cookie_scope: turbo.chat  # turbo.chat including all subdomains
+
+# Stream
+stream_sources:
+    - embed_type: html
+      embed: '<iframe id="player-frame" frameborder="0" scrolling="no"
+           .. src="https://player.twitch.tv/?channel=ffstv" allowfullscreen>
+           ..</iframe>'
+      label: Twitch

@@ -26,6 +26,7 @@
 	}
 
 	// Private Members
+	var _frashMode = document.documentElement.className === 'frash-show-mode'
 	var _heartbeat = null;
 	var _connected = false;
 	var _connecting = false;
@@ -107,7 +108,7 @@
 				}
 			}
 		}
-		return null; 
+		return null;
 	}
 
 	function get_member_key(member) {
@@ -274,12 +275,10 @@
 				sticks.chat.whisper(args[0], args.slice(1).join(' '));
 				return;
 
-			case '/help':
-			case '/h':
-			case '/?':
-				break;
+			default:
+				sticks.chat.help(channel_name);
+				return;
 		}
-		sticks.chat.help(channel_name);
 	}
 
 	function on_message_timeout() {
@@ -401,7 +400,7 @@
 		var toggled = !sticks.hasClass(button, 'fa-toggle-on');
 		switch(element.getAttribute('data-settings-type')) {
 			case 'turbo-mode':
-				var channel_name = element.getAttribute('data-channels'); 
+				var channel_name = element.getAttribute('data-channels');
 				set_turbo_mode(channel_name, toggled);
 				break;
 
@@ -456,15 +455,12 @@
 	}
 
 	function parse_links(message) {
-		if(_hyperlink_regex) {
-			return message.replace(_hyperlink_regex, function(match) {
-				var html = '<a href="'+unescape_html(match)+'" target="_blank">';
-				html += escape_html(match);
-				html += '</a>';
-				return html;
-			});
-		}
-		return message;
+		return message.replace(_hyperlink_regex, function(match) {
+			var html = '<a href="'+unescape_html(match)+'" target="_blank">';
+			html += escape_html(match);
+			html += '</a>';
+			return html;
+		});
 	}
 
 	function write_info(channel_name, message, centered) {
@@ -567,6 +563,9 @@
 				prefix = 'To ';
 			}
 		} else if(type === 'broadcast') {
+			if (_frashMode === true) {
+				return;
+			}
 			css_classes = 'modbroadcast';
 		}
 
@@ -799,7 +798,7 @@
 		var message_history = state['message_history'];
 		for(var idx = 0; idx < message_history.length; idx++) {
 			var message = message_history[idx];
-			if(message['channel'] === 'broadcast') {
+			if(message['channel_name'] === 'broadcast') {
 				on_broadcast(message);
 			} else {
 				on_message(channel_name, message);
@@ -992,7 +991,6 @@
 			var payload = JSON.parse(event.data);
 			var event_name = payload['ev'];
 			var data = payload['d'];
-			console.log(payload);
 			//TODO: grab this from event
 			var channel_name = document.getElementById('channel_name');
 			channel_name = channel_name.value;
@@ -1218,7 +1216,7 @@
 			write_info_multiline(channel_name, [
                 'The following commands are available:',
                 'USAGE NOTE: Command [Alias] argument, (optional argument)',
-                'EXAMPLE USAGE(1): /join #spoilers', 
+                'EXAMPLE USAGE(1): /join #spoilers',
                 'EXAMPLE USAGE(2): /tell cafftest Hello.',
                 '/help [/h /?] -- Help information this screen.',
                 '/quit [/q] -- Quits the chat.',

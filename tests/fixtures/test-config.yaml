@@ -1,0 +1,62 @@
+---  # Config used for testing
+web_uri: example.com
+web_scheme: https
+page_title: TURBO Sticks
+page_description: Test description.
+app_secret: testingtesting12
+base_path: ''
+api_path: /api
+websockets:
+    path: /websockets
+    scheme: wss
+    max_clients: 2
+redis_uri: unix:///var/run/redis/redis.sock
+static_dir: static
+debug_mode: true
+
+special_users:
+    admin: admin
+    crew: crew
+
+webchat:
+    history_ttl: 60
+    history_length: 10
+    timeout_duration: 300
+
+mastodon:
+    client_id: test_client
+    client_secret: test_secret
+
+discord:
+    client_id: test_client
+    client_secret: test_secret
+    bot_token: test_bot_token
+    live_channel: live_chat
+    server_id: 1
+    turbo_role_id: 2
+    api_endpoint: https://discord.com/test
+
+patreon:
+    client_id: test_client
+    client_secret: test_secret
+    access_token: test_access_token
+    refresh_token: test_refresh_token
+    campaign_id: test_campaign
+    session_max_age: 3600
+    api_endpoint: https://patreon.com/test
+
+db_pool:
+    uri: postgresql://postgres@127.0.0.1/test
+
+csrf:
+    expiration_interval: 3600
+    flush_interval: 300
+
+session:
+    max_age: 3600
+    cookie_scope: example.com
+
+stream_sources:
+    - embed_type: html
+      embed: test_embed
+      label: Test

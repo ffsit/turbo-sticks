@@ -1,6 +1,7 @@
-DROP TABLE oauth;
-DROP TABLE users;
-DROP TABLE sessions;
+DROP TABLE IF EXISTS oauth;
+DROP TABLE IF EXISTS properties;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS sessions;
 
 CREATE TABLE oauth (
 	app_name varchar(32) UNIQUE,
@@ -21,7 +22,7 @@ CREATE TABLE users (
 	username varchar(31) UNIQUE,
 	app_password varchar(64), -- encrypted password, using password_secret
 	app_password_hash varchar(32), -- md5 hash
-	banned boolean NOT NULL DEFAULT(FALSE),
+	banned boolean NOT NULL DEFAULT(FALSE)
 );
 
 CREATE TABLE sessions (

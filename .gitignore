@@ -2,10 +2,14 @@
 *.css
 /static/*.js
 !/static/font-awesome/*
-!/static/ovenplayer/*
+*.coverage
 *.directory
-/turbo_config.py
 *.pyc
-/setup/js/local_compile.sh
 *.sublime-project
 *.sublime-workspace
+*.egg-info
+/htmlcov
+/setup/js/local_compile.sh
+/turbo-config.yaml
+/turbo-uwsgi.ini
+/venv

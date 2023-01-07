@@ -8,6 +8,7 @@
 *.sublime-project
 *.sublime-workspace
 *.egg-info
+/build
 /htmlcov
 /setup/js/local_compile.sh
 /turbo-config.yaml

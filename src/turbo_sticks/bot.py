@@ -303,31 +303,36 @@ class SticksBot(discord.Client):
     async def before_webchat_heartbeat(self) -> None:
         await self.wait_until_ready()
 
+    async def refresh_webhook_unlocked(self) -> None:
+        if not self.live_channel_id:
+            return
+
+        channel = self.get_channel(self.live_channel_id)
+        assert isinstance(channel, discord.TextChannel)
+        # clean up old webhooks
+        webhooks = await channel.webhooks()
+        for webhook in webhooks:
+            if (
+                webhook.name and
+                webhook.name.startswith('WEBCHAT-') and
+                webhook.user == self.user
+            ):
+                await webhook.delete()
+
+        # create new webhook
+        webhook_name = f'WEBCHAT-{channel.name}'
+        webhook = await channel.create_webhook(name=webhook_name)
+        self.webchat_webhook = webhook
+
     async def refresh_webhook(self) -> None:
+        # this is mostly a legacy function now
         async with self.webchat_webhook_lock:
-            if not self.live_channel_id:
-                return
-
-            channel = self.get_channel(self.live_channel_id)
-            assert isinstance(channel, discord.TextChannel)
-            # clean up old webhooks
-            webhooks = await channel.webhooks()
-            for webhook in webhooks:
-                if (
-                    webhook.name and
-                    webhook.name.startswith('WEBCHAT-') and
-                    webhook.user == self.user
-                ):
-                    await webhook.delete()
-
-            # create new webhook
-            webhook_name = f'WEBCHAT-{channel.name}'
-            webhook = await channel.create_webhook(name=webhook_name)
-            self.webchat_webhook = webhook
+            await self.refresh_webhook_unlocked()
 
     @tasks.loop(seconds=config.discord.webhook_refresh_interval)
     async def refresh_webhook_loop(self) -> None:
-        await self.refresh_webhook()
+        async with self.webchat_webhook_lock:
+            await self.refresh_webhook_unlocked()
 
     @refresh_webhook_loop.before_loop
     async def before_refresh_webhook(self) -> None:
@@ -416,7 +421,7 @@ class SticksBot(discord.Client):
         channel_name: str,
         username:     str,
         avatar_url:   str,
-        content:      str
+        content:      str,
     ) -> None:
 
         if username[-5:-4] != '#':
@@ -427,9 +432,34 @@ class SticksBot(discord.Client):
             #       some headroom so mods can still do a broadcast and so the
             #       bot can dump rate limited messages before the minute is up
             if self.webchat_message_count < 26:
-                self.webchat_message_count += 1
-                await self.webchat_webhook.send(content, username=username,
-                                                avatar_url=avatar_url)
+
+                # FIXME: make number of retries configurable?
+                for retry_count in range(3):
+                    try:
+                        await self.webchat_webhook.send(
+                            content,
+                            username=username,
+                            avatar_url=avatar_url
+                        )
+                    except discord.errors.NotFound:
+                        if retry_count == 2:
+                            logger.error('Failed to get a new working webhook')
+                            break
+
+                        # refresh the webhook and try sending the message again
+                        logger.warning(
+                            'Our webhook got deleted. '
+                            'Attempting to get a new one...'
+                        )
+                        await self.refresh_webhook_unlocked()
+                        # let's give discord some time
+                        await asyncio.sleep(.5)
+                        continue
+
+                    # if we didn't get an exception break out of the loop
+                    self.webchat_message_count += 1
+                    break
+
             else:
                 self.rate_limited_messages.put_nowait((username, content))
 

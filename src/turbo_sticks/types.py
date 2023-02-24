@@ -1,23 +1,19 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any, Literal, TypedDict, TypeVar, TYPE_CHECKING
-if TYPE_CHECKING:
-    from typing import Protocol, Union
-    # NOTE: Based on a comment from https://github.com/python/typing/issues/182
-    #       It might be fragile, due to the ignores, but it appears to work
-    JSON = Union[str, int, float, bool, None, 'JSONObject', 'JSONArray']
+from typing import Any, Literal, Protocol, TypedDict, TypeVar
 
-    class JSONArray(list[JSON], Protocol):  # type: ignore
-        __class__: type[list[JSON]]  # type: ignore
 
-    class JSONObject(dict[str, JSON], Protocol):  # type: ignore
-        __class__: type[dict[str, JSON]]  # type: ignore
+_F = TypeVar('_F', bound=Callable[..., Any])
 
-    _F = TypeVar('_F', bound=Callable[..., Any])
+JSON = dict[str, 'JSON'] | list['JSON'] | str | int | float | bool | None
+JSONObject = dict[str, JSON]
+JSONArray = list[JSON]
 
-    class Decorator(Protocol):
-        def __call__(self, func: _F) -> _F: ...
+
+class Decorator(Protocol):
+    def __call__(self, __func: _F) -> _F: ...
+
 
 # NOTE: In the future we may need to parametrize this
 MultiDict = dict[str, list[str]]

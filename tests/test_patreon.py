@@ -3,7 +3,8 @@ from unittest.mock import Mock
 
 from turbo_sticks.patreon import (
     build_query, create_session, get_campaigns, get_current_token,
-    get_current_user, get_members, init_oauth, sanitize_json, validate_session
+    get_current_user, get_members, init_oauth, sanitize_json, validate_session,
+    JSONAPIError
 )
 from turbo_sticks.util import decrypt
 
@@ -372,7 +373,7 @@ def test_sanitize_json():
         ],
         'links': 'ignored',
         'meta': 'ignored',
-    }) == [
+    }, listing=True) == [
         {'id': '1', 'type': 'obj_1'},
         {'id': '2', 'type': 'obj_1'},
     ]
@@ -391,7 +392,12 @@ def test_sanitize_json_attributes():
         },
         'links': 'ignored',
         'meta': 'ignored',
-    }) == {'id': '1', 'type': 'obj_1', 'attr_1': 'val_1', 'attr_2': 'val_2'}
+    }) == {
+        'id': '1',
+        'type': 'obj_1',
+        'attr_1': 'val_1',
+        'attr_2': 'val_2'
+    }
 
     assert sanitize_json({
         'data': [
@@ -416,7 +422,7 @@ def test_sanitize_json_attributes():
         ],
         'links': 'ignored',
         'meta': 'ignored',
-    }) == [
+    }, listing=True) == [
         {'id': '1', 'type': 'obj_1', 'attr_1': 'val_1', 'attr_2': 'val_2'},
         {'id': '2', 'type': 'obj_1', 'attr_1': 'val_3', 'attr_2': 'val_4'},
     ]
@@ -506,24 +512,37 @@ def test_sanitize_json_relationships_included():
 
 def test_sanitize_json_with_errors():
     payload = {'errors': ['Error']}
-    assert sanitize_json(payload) == payload
+    with pytest.raises(JSONAPIError) as exc_info:
+        sanitize_json(payload)
+    assert exc_info.value.errors_json == ['Error']
 
 
-def test_sanitize_json_malformed():
+@pytest.mark.parametrize('payload,listing', [
+    # got a listing when we expected an object
+    pytest.param({'data': []}, False, id='listing-for-object'),
+    # got an object when we expected a listing
+    pytest.param({'data': {}}, True, id='object-for-listing'),
+    # scalar content or object without data
+    pytest.param([], False, id='list'),
+    pytest.param({}, False, id='dict'),
+    pytest.param('', False, id='str'),
+    pytest.param(0.0, False, id='float'),
+    pytest.param(1, False, id='int'),
+    pytest.param(False, False, id='bool'),
+    pytest.param(None, False, id='null'),
+    # object with scalar data
+    pytest.param({'data': ''}, False, id='str-object-data'),
+    pytest.param({'data': 0.0}, False, id='float-object-data'),
+    pytest.param({'data': 1}, False, id='int-object-data'),
+    pytest.param({'data': False}, False, id='bool-object-data'),
+    pytest.param({'data': None}, False, id='null-object-data'),
+    # listing with scalar data
+    pytest.param({'data': ['']}, True, id='str-listing-object-data'),
+    pytest.param({'data': [0.0]}, True, id='float-listing-object-data'),
+    pytest.param({'data': [1]}, True, id='int-listing-object-data'),
+    pytest.param({'data': [False]}, True, id='bool-listing-object-data'),
+    pytest.param({'data': [None]}, True, id='null-listing-object-data'),
+])
+def test_sanitize_json_malformed(payload, listing):
     with pytest.raises(ValueError, match=r'Malformed JSON:API content\.'):
-        sanitize_json([])
-
-    with pytest.raises(ValueError, match=r'Malformed JSON:API content\.'):
-        sanitize_json({})
-
-    with pytest.raises(ValueError, match=r'Malformed JSON:API content\.'):
-        sanitize_json('')
-
-    with pytest.raises(ValueError, match=r'Malformed JSON:API content\.'):
-        sanitize_json(0.0)
-
-    with pytest.raises(ValueError, match=r'Malformed JSON:API content\.'):
-        sanitize_json(False)
-
-    with pytest.raises(ValueError, match=r'Malformed JSON:API content\.'):
-        sanitize_json(None)
+        sanitize_json(payload, listing)

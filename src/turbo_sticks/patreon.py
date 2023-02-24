@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import json
 from requests_oauthlib import OAuth2Session
 from time import time
-from typing import Any, TYPE_CHECKING
+from typing import overload, Any, Literal, TYPE_CHECKING
 
 import turbo_sticks.config as config
 import turbo_sticks.util as util
@@ -12,6 +13,7 @@ if TYPE_CHECKING:
     import psycopg
 
     from .types import JSON
+    from .types import JSONArray
     from .types import JSONObject
     from .types import OAuth2Token
 
@@ -142,7 +144,7 @@ def get_current_token() -> OAuth2Token:
 
 
 # Application wide API calls (require application access token)
-def get_campaigns() -> JSON:
+def get_campaigns() -> list[JSONObject]:
     token = get_current_token()
     client = OAuth2Session(config.patreon.client_id, token=token)
     campaigns_url = config.patreon.api_endpoint + '/campaigns'
@@ -152,10 +154,11 @@ def get_campaigns() -> JSON:
         'tier': ['title', 'amount_cents']
     }
     query = build_query(includes, fields)
-    return sanitize_json(client.get(campaigns_url + query).json())
+    campaigns = sanitize_json(client.get(campaigns_url + query).json(), True)
+    return campaigns
 
 
-def get_members() -> JSON:
+def get_members() -> list[JSONObject]:
     token = get_current_token()
     client = OAuth2Session(config.patreon.client_id, token=token)
     includes = ['user']
@@ -179,11 +182,12 @@ def get_members() -> JSON:
     api_endpoint = config.patreon.api_endpoint
     campaign_id = config.patreon.campaign_id
     members_url = f'{api_endpoint}/campaigns/{campaign_id}/members'
-    return sanitize_json(client.get(members_url + query).json())
+    members = sanitize_json(client.get(members_url + query).json(), True)
+    return members
 
 
 # User specific API calls (require user access token)
-def get_current_user(oauth_session: OAuth2Session) -> JSON:
+def get_current_user(oauth_session: OAuth2Session) -> JSONObject:
     includes = ['memberships', 'memberships.campaign']
     fields = {
         'user': [
@@ -203,7 +207,8 @@ def get_current_user(oauth_session: OAuth2Session) -> JSON:
     }
     query = build_query(includes, fields)
     identity_url = config.patreon.api_endpoint + '/identity'
-    return sanitize_json(oauth_session.get(identity_url + query).json())
+    user = sanitize_json(oauth_session.get(identity_url + query).json(), False)
+    return user
 
 
 # Simplified JSON:API helpers for what we need
@@ -214,60 +219,73 @@ def build_query(includes: list[str], fields: dict[str, list[str]]) -> str:
     return '?' + util.urlencode(query)
 
 
+class JSONAPIError(ValueError):
+    def __init__(self, errors: JSON):
+        self.errors_json = errors
+        super().__init__('JSON:API error:\n' + json.dumps(errors, indent=4))
+
+
 # Makes JSON:API responses look more sane
 # Disregards and strips pagination / links
 # Resolves and flattens attributes and relationships
-def sanitize_json(json: JSON) -> JSON:
+@overload
+def sanitize_json(json: JSON, listing: Literal[False] = ...) -> JSONObject: ...
+@overload
+def sanitize_json(json: JSON, listing: Literal[True]) -> list[JSONObject]: ...
+
+
+def sanitize_json(
+    json: JSON,
+    listing: bool = False
+) -> JSONObject | list[JSONObject]:
     try:
         assert isinstance(json, dict)
 
         if 'errors' in json:
-            return json
+            raise JSONAPIError(json['errors'])
 
         data = json['data']
         included = json.get('included', [])
         assert isinstance(included, list)
 
         if not isinstance(data, list):
+            assert listing is False
             return _flatten_json_entry(data, included)
 
+        assert listing is True
         return [_flatten_json_entry(entry, included) for entry in data]
 
     except (KeyError, TypeError, AssertionError):
         raise ValueError('Malformed JSON:API content.')
 
 
-def _flatten_json_entry(entry: JSON, included: list[JSON]) -> JSON:
+def _flatten_json_entry(entry: JSON, included: JSONArray) -> JSONObject:
     assert isinstance(entry, dict)
-    result = {
+    result: dict[str, JSON] = {
         'id': entry['id'],
         'type': entry['type'],
     }
-    if 'attributes' in entry:
-        result.update(entry['attributes'])
+    if isinstance((attrs := entry.get('attributes')), dict):
+        result.update(attrs)
 
-    if 'relationships' in entry:
-        for key, item in entry['relationships'].items():
-            relationships = item['data']
-            if not isinstance(relationships, list):
-                result[key] = _fetch_relationship(relationships, included)
+    if isinstance((rels := entry.get('relationships')), dict):
+        for key, item in rels.items():
+            assert isinstance(item, dict)
+            relationship = item['data']
+            if not isinstance(relationship, list):
+                result[key] = _fetch_relationship(relationship, included)
                 continue
 
             result[key] = [
-                _fetch_relationship(relationship, included)
-                for relationship in relationships
+                _fetch_relationship(rel, included) for rel in relationship
             ]
     return result
 
 
-def _fetch_relationship(
-    relationship: JSONObject,
-    included: list[JSON]
-) -> JSON:
-
+def _fetch_relationship(relationship: JSON, included: JSONArray) -> JSONObject:
+    assert isinstance(relationship, dict)
     for item in included:
         assert isinstance(item, dict)
-
         if item['type'] != relationship['type']:
             continue
 

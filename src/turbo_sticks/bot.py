@@ -162,7 +162,7 @@ class SticksBot(discord.Client):
                 for username in islice(usernames, 0, 25)
             ]
 
-        @self.tree.command(
+        @self.tree.command(  # type:ignore[arg-type]
             guild=guild,
             description='Whisper to a webchat user'
         )
@@ -190,7 +190,7 @@ class SticksBot(discord.Client):
                     delete_after=60,
                 )
 
-        @self.tree.command(
+        @self.tree.command(  # type:ignore[arg-type]
             guild=guild,
             description='Reply to the last webchat whisper you received'
         )
@@ -226,7 +226,7 @@ class SticksBot(discord.Client):
                     delete_after=60,
                 )
 
-        @self.tree.command(
+        @self.tree.command(  # type:ignore[arg-type]
             guild=guild,
             description='Show who\'s online in the webchat'
         )
@@ -239,7 +239,7 @@ class SticksBot(discord.Client):
                 ephemeral=True
             )
 
-        @self.tree.command(
+        @self.tree.command(  # type:ignore[arg-type]
             guild=guild,
             description='Send an important message to everyone '
                         'without it popping up on the show.'

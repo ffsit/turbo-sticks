@@ -761,14 +761,18 @@ def patreon_theatre_callback_view(
             client_secret=config.patreon.client_secret.get_secret_value()
         )
         patreon_user = patreon.get_current_user(oauth)
-        if not isinstance(patreon_user, dict) or 'errors' in patreon_user:
+        if 'errors' in patreon_user:
             return error_view('Unexpected error',
                               'Failed to retrieve Patreon user details.')
 
         memberships = patreon_user.get('memberships', [])
+        assert isinstance(memberships, list)
         session_token = None
         for item in memberships:
-            campaign_id = item.get('campaign', {}).get('id', '')
+            assert isinstance(item, dict)
+            campaign = item.get('campaign', {})
+            assert isinstance(campaign, dict)
+            campaign_id = campaign.get('id', '')
             if campaign_id != config.patreon.campaign_id:
                 continue
 

@@ -50,6 +50,8 @@ Upgrade
 
 Change Log
 -----------
+#### 3.0.2
+Updated version pins
 #### 3.0.1
 Tries to make webhook messages in the Discord bot more robust.
 #### 3.0.0

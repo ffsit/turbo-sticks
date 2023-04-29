@@ -39,7 +39,8 @@ def test_get_member(monkeypatch):
     assert isinstance(get_member(12), Mock)
     get.assert_called_once_with(
         'https://discord.com/test/guilds/1/members/12',
-        headers=request_headers
+        headers=request_headers,
+        timeout=(5, 10)
     )
     response.json.assert_called_once()
 
@@ -72,7 +73,8 @@ def test_get_roles(monkeypatch):
     assert isinstance(get_roles(), Mock)
     get.assert_called_once_with(
         'https://discord.com/test/guilds/1/roles',
-        headers=request_headers
+        headers=request_headers,
+        timeout=(5, 10)
     )
     response.json.assert_called_once()
 
@@ -167,7 +169,8 @@ def test_add_turbo_role(monkeypatch):
     put.assert_called_once_with(
         'https://discord.com/test/guilds/1/members/22/roles/2',
         json={},
-        headers=request_headers
+        headers=request_headers,
+        timeout=(5, 30)
     )
 
     put.reset_mock()
@@ -176,7 +179,8 @@ def test_add_turbo_role(monkeypatch):
     put.assert_called_once_with(
         'https://discord.com/test/guilds/1/members/14/roles/2',
         json={},
-        headers=request_headers
+        headers=request_headers,
+        timeout=(5, 30)
     )
 
     put.reset_mock()
@@ -189,12 +193,14 @@ def test_add_turbo_role(monkeypatch):
     put.assert_any_call(
         'https://discord.com/test/guilds/1/members/36',
         json={'access_token': 'deadbeef'},
-        headers=request_headers
+        headers=request_headers,
+        timeout=(5, 30)
     )
     put.assert_any_call(
         'https://discord.com/test/guilds/1/members/36/roles/2',
         json={},
-        headers=request_headers
+        headers=request_headers,
+        timeout=(5, 30)
     )
 
 
@@ -211,7 +217,8 @@ def test_remove_turbo_role(monkeypatch, caplog):
     assert remove_turbo_role(12) is True
     get.assert_called_once_with(
         'https://discord.com/test/guilds/1/members/12',
-        headers=request_headers
+        headers=request_headers,
+        timeout=(5, 10)
     )
     delete.assert_not_called()
 
@@ -221,7 +228,8 @@ def test_remove_turbo_role(monkeypatch, caplog):
     assert remove_turbo_role(24) is True
     get.assert_called_once_with(
         'https://discord.com/test/guilds/1/members/24',
-        headers=request_headers
+        headers=request_headers,
+        timeout=(5, 10)
     )
     delete.assert_not_called()
 
@@ -231,11 +239,13 @@ def test_remove_turbo_role(monkeypatch, caplog):
     assert remove_turbo_role(36) is True
     get.assert_called_once_with(
         'https://discord.com/test/guilds/1/members/36',
-        headers=request_headers
+        headers=request_headers,
+        timeout=(5, 10)
     )
     delete.assert_called_once_with(
         'https://discord.com/test/guilds/1/members/36/roles/2',
-        headers=request_headers
+        headers=request_headers,
+        timeout=(5, 30)
     )
 
     get.reset_mock()
@@ -245,10 +255,12 @@ def test_remove_turbo_role(monkeypatch, caplog):
     assert remove_turbo_role(48) is False
     get.assert_called_once_with(
         'https://discord.com/test/guilds/1/members/48',
-        headers=request_headers
+        headers=request_headers,
+        timeout=(5, 10)
     )
     delete.assert_called_once_with(
         'https://discord.com/test/guilds/1/members/48/roles/2',
-        headers=request_headers
+        headers=request_headers,
+        timeout=(5, 30)
     )
     assert 'Discord Error: Service unavailable.' in caplog.text

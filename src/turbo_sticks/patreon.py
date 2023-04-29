@@ -256,7 +256,7 @@ def sanitize_json(
         return [_flatten_json_entry(entry, included) for entry in data]
 
     except (KeyError, TypeError, AssertionError):
-        raise ValueError('Malformed JSON:API content.')
+        raise ValueError('Malformed JSON:API content.') from None
 
 
 def _flatten_json_entry(entry: JSON, included: JSONArray) -> JSONObject:

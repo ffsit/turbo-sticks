@@ -1,6 +1,7 @@
 include turbo-config.example.yaml
 include turbo-sticks.wsgi
 include turbo-uwsgi.example.ini
+recursive-include src/turbo_sticks/templates *.html
 graft setup
 graft static
 graft tests

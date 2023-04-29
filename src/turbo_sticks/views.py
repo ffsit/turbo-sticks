@@ -565,7 +565,7 @@ def headless_chat_view(
     page_data = basic_page_data('chat-headless')
     page_data['frash_mode'] = ''
     page_data['rules_uri'] = views['rules'].path
-    page_data['rand_spinner'] = str(random.randint(1, 5))  # nosec
+    page_data['rand_spinner'] = str(random.randint(1, 5))   # nosec: B311
     page_data['webchat_uri'] = util.build_url('/webchat', 'websockets')
     page_data['live_channel'] = config.discord.live_channel
     status = '200 OK'
@@ -588,7 +588,7 @@ def frash_chat_view(
     page_data = basic_page_data('frash-chat')
     page_data['frash_mode'] = 'frash-show-mode'
     page_data['rules_uri'] = views['rules'].path
-    page_data['rand_spinner'] = str(random.randint(1, 5))  # nosec
+    page_data['rand_spinner'] = str(random.randint(1, 5))  # nosec: B311
     page_data['webchat_uri'] = util.build_url('/webchat', 'websockets')
     page_data['live_channel'] = config.discord.live_channel
     status = '200 OK'

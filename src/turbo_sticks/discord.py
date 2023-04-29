@@ -28,7 +28,11 @@ def get_member(discord_id: int | None) -> DiscordGuildMember | None:
     if discord_id is None:
         return None
     member_url = f'{guild_url}/members/{discord_id}'
-    return requests.get(member_url, headers=request_headers).json()
+    return requests.get(
+        member_url,
+        headers=request_headers,
+        timeout=(5, 10)
+    ).json()
 
 
 def get_user(member: DiscordGuildMember | None) -> DiscordUser | None:
@@ -39,7 +43,11 @@ def get_user(member: DiscordGuildMember | None) -> DiscordUser | None:
 
 def get_roles() -> list[DiscordRole]:
     get_roles_url = f'{guild_url}/roles'
-    return requests.get(get_roles_url, headers=request_headers).json()
+    return requests.get(
+        get_roles_url,
+        headers=request_headers,
+        timeout=(5, 10)
+    ).json()
 
 
 _roles: dict[int, MinimalRole] | None = None
@@ -104,14 +112,16 @@ def add_turbo_role(
         requests.put(
             member_url,
             json={'access_token': token['access_token']},
-            headers=request_headers
+            headers=request_headers,
+            timeout=(5, 30)
         )
 
     # add member to role
     response = requests.put(
         f'{member_url}/roles/{discord.turbo_role_id}',
         json={},
-        headers=request_headers
+        headers=request_headers,
+        timeout=(5, 30)
     )
 
     return response.status_code == 204
@@ -121,7 +131,11 @@ def remove_turbo_role(discord_id: int) -> bool:
     member_url = f'{guild_url}/members/{discord_id}'
 
     # check if member exists, if not report success to prevent lock
-    response = requests.get(member_url, headers=request_headers)
+    response = requests.get(
+        member_url,
+        headers=request_headers,
+        timeout=(5, 10)
+    )
     error = response.json()
     if response.status_code == 404 or error.get('key', 0) == 10007:
         return True
@@ -129,7 +143,8 @@ def remove_turbo_role(discord_id: int) -> bool:
     # remove member from role
     response = requests.delete(
         f'{member_url}/roles/{discord.turbo_role_id}',
-        headers=request_headers
+        headers=request_headers,
+        timeout=(5, 30)
     )
 
     if response.status_code == 204:

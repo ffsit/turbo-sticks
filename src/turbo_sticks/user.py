@@ -347,7 +347,8 @@ class User(BaseUser):
             self.app_password = encrypt(app_password_plain)
             # NOTE: MD5 is totally fine for randomly generated app passwords
             self.app_password_hash = md5(  # nosec
-                app_password_plain.encode('utf-8')).hexdigest()
+                app_password_plain.encode('utf-8')
+            ).hexdigest()
 
             with self.db.connection() as conn:
                 with conn.cursor() as cur:

@@ -58,7 +58,7 @@ class WSGIApplication:
                     return []
 
         elif path.startswith(config.base_path):
-            for name, item in views.items():
+            for item in views.values():
                 if path == item.path:
                     if item.view is not None:
                         response_body, response_headers, status = item.view(

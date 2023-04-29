@@ -12,11 +12,16 @@ def main() -> None:
     }
 
     print('Retrieving information from Discord API...')
-    guilds = requests.get(get_guilds_url, headers=request_headers).json()
+    guilds = requests.get(
+        get_guilds_url,
+        headers=request_headers,
+        timeout=(5, 10)
+    ).json()
     for guild in guilds:
         roles = requests.get(
             get_roles_url % guild['id'],
-            headers=request_headers
+            headers=request_headers,
+            timeout=(5, 10)
         ).json()
 
         print('========================================')

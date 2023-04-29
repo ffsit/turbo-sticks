@@ -8,7 +8,6 @@ from turbo_sticks.csrf import TokenClerk
 from turbo_sticks.enums import ACL
 from turbo_sticks.db import DBError
 from turbo_sticks.session import get_session
-from turbo_sticks.user import User
 
 
 def test_api_call(api_calls):

@@ -54,7 +54,7 @@ def single_cache(func: Callable[[], _T]) -> Callable[[], _T]:
         nonlocal computed
         computed = Sentinel.sentinel
 
-    setattr(wrapper, 'cache_clear', cache_clear)
+    wrapper.cache_clear = cache_clear  # type:ignore[attr-defined]
     return wrapper
 
 

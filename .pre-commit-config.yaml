@@ -16,34 +16,31 @@ repos:
     rev: 6.0.0
     hooks:
       - id: flake8
+        additional_dependencies:
+          - flake8-bugbear ==23.3.23
         files: '^src/.*\.py'
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.4
+    rev: 1.7.5
     hooks:
       - id: bandit
-        additional_dependencies: [toml]
+        additional_dependencies:
+          - 'bandit[toml]'
         args: ['-r', 'src', '-c', 'pyproject.toml']
         always_run: true
         files: '^$'
-
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.0.1
+    rev: v1.2.0
     hooks:
       - id: mypy
         additional_dependencies:
-          - discord.py==2.1.1
-          - gevent==22.10.2
-          - oauthlib==3.2.2
-          - redis==4.5.1
-          - requests==2.28.2
-          - requests-oauthlib==1.3.1
+          - discord.py==2.2.2
           - 'psycopg[c]==3.1.8'
-          - 'psycopg-pool==3.1.6'
-          - pydantic==1.10.5
-          - types-oauthlib==3.2.0.5
-          - types-pyYAML==6.0.12.8
-          - types-redis==4.5.1.3
-          - types-requests==2.28.11.14
+          - psycopg-pool==3.1.7
+          - pydantic==1.10.7
+          - types-oauthlib==3.2.0.7
+          - types-pyYAML==6.0.12.9
+          - types-redis==4.5.4.1
+          - types-requests==2.29.0.0
         args: ['-p', 'turbo_sticks']
         always_run: true
         files: '^$'

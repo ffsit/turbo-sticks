@@ -507,12 +507,13 @@ def test_get_client(uwsgi, redis):
 def test_channel_insufficient_privileges(uwsgi, redis):
     channel = Channel('test', '/test')
     with cleanup_channel(channel):
+        def insufficient():
+            client = channel.add_client({})
+            # so we don't catch the exception in the wrapper
+            client.start.__wrapped__(client)
+        greenlet = gevent.spawn(insufficient)
+
         with pytest.raises(ClientError, match=r'Insufficient privileges\.'):
-            def insufficient():
-                client = channel.add_client({})
-                # so we don't catch the exception in the wrapper
-                client.start.__wrapped__(client)
-            greenlet = gevent.spawn(insufficient)
             # this reraises the exception from the greenlet
             greenlet.get(timeout=5.0)
 
@@ -530,12 +531,13 @@ def test_channel_no_available_slots(uwsgi, redis):
         assert redis.get('websocket-clients') == b'2'
 
         # client 3 will be too many with test config
+        def too_many():
+            client = channel.add_client({})
+            # so we don't catch the exception in the wrapper
+            client.start.__wrapped__(client)
+        greenlet = gevent.spawn(too_many)
+
         with pytest.raises(ClientError, match=r'No available slots\.'):
-            def too_many():
-                client = channel.add_client({})
-                # so we don't catch the exception in the wrapper
-                client.start.__wrapped__(client)
-            greenlet = gevent.spawn(too_many)
             # this reraises the exception from the greenlet
             greenlet.get(timeout=5.0)
 

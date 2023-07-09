@@ -5,9 +5,10 @@ import yaml
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pydantic import (
-    BaseModel, BaseSettings, PositiveInt, PostgresDsn, SecretStr, validator
+    BaseModel, FieldValidationInfo, PositiveInt, PostgresDsn, SecretStr,
+    field_validator
 )
-from pydantic.env_settings import SettingsSourceCallable
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource
 from typing import Any
 
 from .enums import ACL
@@ -21,10 +22,11 @@ class WebsocketsConfig(BaseModel):
     scheme:      WSScheme = 'wss'
     max_clients: PositiveInt = 90
 
-    class Config:
+    model_config = {
         # NOTE: For now this seems more sensible but maybe in the future we
         #       want the configuration to be mutable in some way at runtime
-        allow_mutation = False
+        'frozen': True
+    }
 
 
 class MastodonConfig(BaseModel):
@@ -37,10 +39,11 @@ class MastodonConfig(BaseModel):
         'https://toot.turbo.chat/api/v1/accounts/verify_credentials'
     )
 
-    class Config:
+    model_config = {
         # NOTE: For now this seems more sensible but maybe in the future we
         #       want the configuration to be mutable in some way at runtime
-        allow_mutation = False
+        'frozen': True
+    }
 
 
 class WebchatConfig(BaseModel):
@@ -48,10 +51,11 @@ class WebchatConfig(BaseModel):
     history_length:   PositiveInt = 50
     timeout_duration: PositiveInt = 5*60
 
-    class Config:
+    model_config = {
         # NOTE: For now this seems more sensible but maybe in the future we
         #       want the configuration to be mutable in some way at runtime
-        allow_mutation = False
+        'frozen': True
+    }
 
 
 class DiscordConfig(BaseModel):
@@ -60,18 +64,24 @@ class DiscordConfig(BaseModel):
     scope:                    list[str] = []
     bot_token:                SecretStr
     live_channel:             str = 'live_chat'
-    server_id:                str
-    turbo_role_id:            str
+    # NOTE: These ids used to be strings, but since Discord ids are snowflakes
+    #       they should always be a positive int, pydantic2 is more pedantic
+    #       so it won't accept an integer as a string, so this just saves us
+    #       the trouble of having to deal with that, since YAML will read it
+    #       as an integer unless it's quoted anyways
+    server_id:                PositiveInt
+    turbo_role_id:            PositiveInt
     webhook_refresh_interval: PositiveInt = 60*60
     webchat_user_suffix:      str = '@turbo.chat'
     authorize_url:            str = 'https://discord.com/api/oauth2/authorize'
     token_url:                str = 'https://discord.com/api/oauth2/token'
     api_endpoint:             str = 'https://discord.com/api/v6'
 
-    class Config:
+    model_config = {
         # NOTE: For now this seems more sensible but maybe in the future we
         #       want the configuration to be mutable in some way at runtime
-        allow_mutation = False
+        'frozen': True
+    }
 
 
 class PatreonConfig(BaseModel):
@@ -87,55 +97,55 @@ class PatreonConfig(BaseModel):
     theatre_cents:   PositiveInt = 500
     session_max_age: PositiveInt = 60*60
 
-    class Config:
+    model_config = {
         # NOTE: For now this seems more sensible but maybe in the future we
         #       want the configuration to be mutable in some way at runtime
-        allow_mutation = False
+        'frozen': True
+    }
 
 
 class DBPoolConfig(BaseModel):
     uri:      PostgresDsn = PostgresDsn(
-        None,
-        scheme='postgresql',
-        user='turbo',
-        host='127.0.0.1',
-        host_type='ipv4',
-        path='/turbo_bridge',
+        'postgresql://turbo@127.0.0.1/turbo_bridge'
     )
     min_size: PositiveInt = 4
     max_size: PositiveInt = 8
     max_idle: PositiveInt = 60*10
     max_age:  PositiveInt = 60*60
 
-    @validator('max_size')
-    def max_ge_min(cls, v: int, values: dict[str, Any]) -> None:
-        if v < values.get('min_size', 0):
+    @field_validator('max_size')
+    @classmethod
+    def max_ge_min(cls, v: int, info: FieldValidationInfo) -> None:
+        if v < info.data.get('min_size', 0):
             raise ValueError('needs to be greater or equal to min_size.')
 
-    class Config:
+    model_config = {
         # NOTE: For now this seems more sensible but maybe in the future we
         #       want the configuration to be mutable in some way at runtime
-        allow_mutation = False
+        'frozen': True
+    }
 
 
 class CSRFConfig(BaseModel):
     expiration_interval: PositiveInt = 60*60
     flush_interval:      PositiveInt = 60*5
 
-    class Config:
+    model_config = {
         # NOTE: For now this seems more sensible but maybe in the future we
         #       want the configuration to be mutable in some way at runtime
-        allow_mutation = False
+        'frozen': True
+    }
 
 
 class SessionConfig(BaseModel):
     max_age:      PositiveInt = 7*24*60*60
     cookie_scope: str = 'turbo.chat'
 
-    class Config:
+    model_config = {
         # NOTE: For now this seems more sensible but maybe in the future we
         #       want the configuration to be mutable in some way at runtime
-        allow_mutation = False
+        'frozen': True
+    }
 
 
 class SticksConfig(BaseSettings):
@@ -163,22 +173,31 @@ class SticksConfig(BaseSettings):
     session:          SessionConfig = SessionConfig()
     stream_sources:   list[StreamEmbed] = []
 
-    class Config:
+    model_config = {
         # NOTE: For now this seems more sensible but maybe in the future we
         #       want the configuration to be mutable in some way at runtime
-        allow_mutation = False
-        secrets_dir = '/var/run'
-        env_prefix = 'STICKS_'
-        env_nested_delimiter = '__'
+        'frozen': True,
+        'secrets_dir': '/var/run',
+        'env_prefix': 'STICKS_',
+        'env_nested_delimiter': '__'
+    }
 
-        @classmethod
-        def customise_sources(
-            cls,
-            init_settings: SettingsSourceCallable,
-            env_settings: SettingsSourceCallable,
-            file_secret_settings: SettingsSourceCallable,
-        ) -> tuple[SettingsSourceCallable, ...]:
-            return env_settings, init_settings, file_secret_settings
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        return (
+            env_settings,
+            init_settings,
+            # FIXME: Something about file_secret_settings broke in pydantic 2.0
+            #        figure it out and re-enable it when it is fixed
+            # file_secret_settings
+        )
 
 
 # TODO: We probably want an explicit function call to load the config.
@@ -194,7 +213,7 @@ with open(_config_file, 'r') as fp:
 def patch_config(**kwargs: Any) -> Iterator[SticksConfig]:
     global _config
     original = _config
-    values = original.dict()
+    values = original.model_dump()
     # merge config values two levels deep
     for key, value in kwargs.items():
         if isinstance(value, dict):

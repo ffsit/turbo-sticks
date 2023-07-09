@@ -133,6 +133,15 @@ def test_render_username():
     assert 'test' in rendered
     assert '#0004' in rendered
 
+    # once the discriminator is 0, don't render it
+    user = {
+        'id': 1,
+        'username': 'test',
+        'discriminator': '0',
+        'avatar': None,
+    }
+    assert render_username(user) == 'test'
+
 
 def test_render_roles(mock_get_roles):
     assert render_roles(None) == ''

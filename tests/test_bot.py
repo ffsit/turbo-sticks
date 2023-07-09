@@ -6,6 +6,7 @@ import pytest_asyncio
 import discord.errors
 import discord.ext.test as dpytest
 import discord.ext.test.backend as backend
+from contextlib import contextmanager
 from datetime import datetime
 from unittest.mock import AsyncMock, Mock
 
@@ -22,6 +23,13 @@ from turbo_sticks.util import shaddex, shget
 #       to gain more confidence that everything is working correctly...
 
 
+@contextmanager
+def stop_dispatch():
+    backend.get_state().stop_dispatch()
+    yield
+    backend.get_state().start_dispatch()
+
+
 @pytest_asyncio.fixture
 async def base_bot(redisdb, monkeypatch):
     # HACK: We compensate for dpytest just letting that property fail
@@ -34,7 +42,16 @@ async def base_bot(redisdb, monkeypatch):
     bot.refresh_webhook = AsyncMock(return_value=None)
     bot.webchat_webhook = AsyncMock()
     await bot._async_setup_hook()
-    dpytest.configure(bot, 0, 0, 0)
+    dpytest.configure(
+        bot,
+        # NOTE: We create these in fixtures, so we can access them from
+        #       the fixtures, rather than having to call get_config() in
+        #       every test
+        guilds=[],
+        text_channels=[],
+        voice_channels=[],
+        members=[],
+    )
     await bot.setup_hook()
     bot._handle_ready()
     yield bot
@@ -44,61 +61,67 @@ async def base_bot(redisdb, monkeypatch):
 
 @pytest_asyncio.fixture
 async def guild(base_bot):
-    config = dpytest.get_config()
-    guild = backend.make_guild('VGA', id_num=1)
-    # add bot to guild
-    backend.make_member(base_bot.user, guild)
-    config.guilds.append(guild)
-    return guild
+    with stop_dispatch():
+        config = dpytest.get_config()
+        guild = backend.make_guild('VGA', id_num=1)
+        # add bot to guild
+        backend.make_member(backend.get_state().user, guild)
+        config.guilds.append(guild)
+        return guild
 
 
 @pytest_asyncio.fixture
 async def roles(guild):
-    return dict(
-        crew=backend.make_role('crew', guild, id_num=6),
-        moderator=backend.make_role('moderator', guild, id_num=5),
-        helper=backend.make_role('helper', guild, id_num=4),
-        vip=backend.make_role('vip', guild, id_num=3),
-        turbo=backend.make_role('turbo', guild, id_num=2),
-        default=backend.make_role('default', guild, id_num=1),
-    )
+    with stop_dispatch():
+        return {
+            'crew': backend.make_role('crew', guild, id_num=6),
+            'moderator': backend.make_role('moderator', guild, id_num=5),
+            'helper': backend.make_role('helper', guild, id_num=4),
+            'vip': backend.make_role('vip', guild, id_num=3),
+            'turbo': backend.make_role('turbo', guild, id_num=2),
+            'default': backend.make_role('default', guild, id_num=1),
+        }
 
 
 @pytest_asyncio.fixture
 async def channel(base_bot, guild):
-    config = dpytest.get_config()
-    channel = backend.make_text_channel('live_chat', guild)
-    config.channels.append(channel)
-    # we may want to trigger a guild_available event instead, so we
-    # properly test that code path
-    base_bot.live_channel_id = channel.id
-    return channel
+    with stop_dispatch():
+        config = dpytest.get_config()
+        channel = backend.make_text_channel('live_chat', guild)
+        config.channels.append(channel)
+        # we may want to trigger a guild_available event instead, so we
+        # properly test that code path
+        base_bot.live_channel_id = channel.id
+        return channel
 
 
 @pytest_asyncio.fixture
 async def unrelated_channel(guild):
-    config = dpytest.get_config()
-    channel = backend.make_text_channel('unrelated', guild)
-    config.channels.append(channel)
-    return channel
+    with stop_dispatch():
+        config = dpytest.get_config()
+        channel = backend.make_text_channel('unrelated', guild)
+        config.channels.append(channel)
+        return channel
 
 
 @pytest_asyncio.fixture
 async def member(guild, roles):
-    config = dpytest.get_config()
-    user = backend.make_user('test', 1234)
-    member = backend.make_member(user, guild, roles=[roles['turbo']])
-    config.members.append(member)
-    return member
+    with stop_dispatch():
+        config = dpytest.get_config()
+        user = backend.make_user('test', 1234)
+        member = backend.make_member(user, guild, roles=[roles['turbo']])
+        config.members.append(member)
+        return member
 
 
 @pytest_asyncio.fixture
 async def moderator(guild, roles):
-    config = dpytest.get_config()
-    user = backend.make_user('moderator', 1337)
-    member = backend.make_member(user, guild, roles=[roles['moderator']])
-    config.members.append(member)
-    return member
+    with stop_dispatch():
+        config = dpytest.get_config()
+        user = backend.make_user('moderator', 1337)
+        member = backend.make_member(user, guild, roles=[roles['moderator']])
+        config.members.append(member)
+        return member
 
 
 @pytest_asyncio.fixture
@@ -649,6 +672,8 @@ async def test_on_message_timed_out(bot, channel, member, redisdb, webchat):
 
     # this message should get deleted, because member is timed out
     message = await dpytest.message('hello')
+    # NOTE: flakyness forces us to sleep here
+    await asyncio.sleep(0.01)
     response = dpytest.get_message()
     assert response.channel == member.dm_channel
     assert 'You are still timed out.' in response.content
@@ -677,6 +702,8 @@ async def edit_message(message, **fields):
 @pytest.mark.asyncio
 async def test_on_message_edit(bot, channel, redisdb, webchat):
     original = await dpytest.message('hello')
+    # NOTE: flakyness forces us to sleep here
+    await asyncio.sleep(0.01)
     # original message being sent to webchat
     message = webchat.parse_response(block=False, timeout=0.1)
     assert message and message[0] == b'message'
@@ -702,6 +729,8 @@ async def test_on_message_edit(bot, channel, redisdb, webchat):
 @pytest.mark.asyncio
 async def test_on_raw_message_delete(bot, redisdb, webchat):
     original = await dpytest.message('hello')
+    # NOTE: flakyness forces us to sleep here
+    await asyncio.sleep(0.01)
     # original message being sent to webchat
     message = webchat.parse_response(block=False, timeout=0.1)
     assert message and message[0] == b'message'

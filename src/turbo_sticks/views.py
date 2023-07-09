@@ -217,13 +217,19 @@ def auth_view(  # noqa: E302
 
                 status = '307 Temporary Redirect'
                 response_body = b''
-                response_headers = [('Location', str(authorization_url))]
+                response_headers = [
+                    # don't cache the redirect
+                    ('Cache-Control', 'no-store'),
+                    ('Location', str(authorization_url))
+                ]
 
             # Redirect to url without cookie_set parameter
             elif cookie_set == '1':
                 status = '307 Temporary Redirect'
                 response_body = b''
                 response_headers = [
+                    # don't cache the redirect
+                    ('Cache-Control', 'no-store'),
                     ('Location', util.build_url(env['PATH_INFO']))
                 ]
 
@@ -242,6 +248,9 @@ def auth_view(  # noqa: E302
                 response_body, response_headers, status = func(
                     env, get_vars, post_vars, csrf_clerk, session, user
                 )
+
+                # don't store authenticated views
+                response_headers.insert(0, ('Cache-Control', 'no-store'))
 
             return response_body, response_headers, status
         return view(wrapper, nav=nav, headless=headless)
@@ -303,7 +312,11 @@ def main_view(env: dict[str, Any], csrf_clerk: TokenClerk) -> Response:
 
             status = '307 Temporary Redirect'
             response_body = b''
-            response_headers = [('Location', str(authorization_url))]
+            response_headers = [
+                # don't cache the redirect
+                ('Cache-Control', 'no-store'),
+                ('Location', str(authorization_url))
+            ]
 
         # Not yet authenticated and no old session
         else:
@@ -317,6 +330,8 @@ def main_view(env: dict[str, Any], csrf_clerk: TokenClerk) -> Response:
         status = '307 Temporary Redirect'
         response_body = b''
         response_headers = [
+            # don't cache the redirect
+            ('Cache-Control', 'no-store'),
             ('Location', views['account'].uri)
         ]
     return response_body, response_headers, status
@@ -399,6 +414,8 @@ def oauth_callback_view(
         response_body = b''
         response_headers = [
             util.set_cookie_header('TB_SESSION', session_token),
+            # don't cache OAuth responses
+            ('Cache-Control', 'no-store'),
             ('Location', redirect_to)
         ]
         return response_body, response_headers, status

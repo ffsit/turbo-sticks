@@ -96,7 +96,11 @@ def test_auth_view(env):
         assert user.username == 'test'
         return b'', [], '200 OK'
 
-    assert test(env, _csrf_clerk) == (b'', [], '200 OK')
+    assert test(env, _csrf_clerk) == (
+        b'',
+        [('Cache-Control', 'no-store')],
+        '200 OK'
+    )
 
 
 def test_auth_view_cookie_set(env):
@@ -109,7 +113,10 @@ def test_auth_view_cookie_set(env):
     csrf_clerk = TokenClerk()
     content, headers, status = test(env, csrf_clerk)
     assert content == b''
-    assert headers == [('Location', 'https://example.com/')]
+    assert headers == [
+        ('Cache-Control', 'no-store'),
+        ('Location', 'https://example.com/')
+    ]
     assert status == '307 Temporary Redirect'
 
 
@@ -135,7 +142,10 @@ def test_auth_view_unauthenticated(env):
     csrf_clerk = TokenClerk()
     content, headers, status = test(env, csrf_clerk)
     assert content == b''
-    assert headers == [('Location', 'https://example.com/mock_authorization')]
+    assert headers == [
+        ('Cache-Control', 'no-store'),
+        ('Location', 'https://example.com/mock_authorization')
+    ]
     assert status == '307 Temporary Redirect'
 
 

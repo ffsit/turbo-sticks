@@ -122,6 +122,11 @@
 		var username = member['username'];
 		if(member['local'] === false) {
 			var discriminator = member['discriminator'];
+			// TODO: we may still want to add some indicator, showing
+			//       that this user is only logged into discord
+			if(discriminator === '0') {
+				return username;
+			}
 			username += '<span class="discriminator">#'+discriminator+'</span>';
 		}
 		return username;

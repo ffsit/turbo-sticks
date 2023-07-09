@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any, Literal, Protocol, TypedDict, TypeVar
+from typing import Any, Literal, Protocol, TypeVar
+from typing_extensions import NotRequired, TypedDict
 
 
 _F = TypeVar('_F', bound=Callable[..., Any])
@@ -32,14 +33,11 @@ class StreamEmbed(TypedDict):
     label: str
 
 
-class _OAuth2Token(TypedDict):
-    access_token: str
-    token_type:   str
-
-
-class OAuth2Token(_OAuth2Token, total=False):
-    refresh_token: str
-    expires_in:    str
+class OAuth2Token(TypedDict):
+    access_token:  str
+    token_type:    str
+    refresh_token: NotRequired[str]
+    expires_in:    NotRequired[str]
 
 
 # Webchat types
@@ -85,24 +83,18 @@ MastodonAccountPrivacy = Literal[
 ]
 
 
-class _MastodonEmoji(TypedDict):
+class MastodonEmoji(TypedDict):
     shortcode:         str
     url:               str
     static_url:        str
     visible_in_picker: bool
+    category:          NotRequired[str]
 
 
-class MastodonEmoji(_MastodonEmoji, total=False):
-    category: str
-
-
-class _MastodonField(TypedDict):
-    name:  str
-    value: str
-
-
-class MastodonField(_MastodonField, total=False):
-    verified_at: str | None  # ISO 8601
+class MastodonField(TypedDict):
+    name:        str
+    value:       str
+    verified_at: NotRequired[str | None]  # ISO 8601
 
 
 class MastodonSource(TypedDict):
@@ -118,7 +110,7 @@ class MastodonSource(TypedDict):
 
 # According to https://docs.joinmastodon.org/entities/account/
 # We may decide to use pydantic to validate the contents from the API call
-class _MastodonAccount(TypedDict):
+class MastodonAccount(TypedDict):
     # Base
     id:       str  # should convert to int for valid accounts
     username: str
@@ -143,54 +135,50 @@ class _MastodonAccount(TypedDict):
     followers_count: int
     following_count: int
 
-
-class MastodonAccount(_MastodonAccount, total=False):
     # Optional attributes
-    moved:           dict[str, Any]
-    fields:          list[MastodonField]
-    bot:             bool
-    source:          MastodonSource
-    suspended:       bool
-    mute_expires_at: str  # ISO 8601
+    moved:           NotRequired[dict[str, Any]]
+    fields:          NotRequired[list[MastodonField]]
+    bot:             NotRequired[bool]
+    source:          NotRequired[MastodonSource]
+    suspended:       NotRequired[bool]
+    mute_expires_at: NotRequired[str]  # ISO 8601
 
 
 # Discord API types
-class _DiscordUser(TypedDict):
+class DiscordUser(TypedDict):
     id:            int
     username:      str
     discriminator: str
     avatar:        str | None
 
+    # Optional attributes
+    bot:           NotRequired[bool]
+    system:        NotRequired[bool]
+    mfa_enabled:   NotRequired[bool]
+    banner:        NotRequired[str | None]
+    accent_color:  NotRequired[int | None]
+    locale:        NotRequired[str]         # Probably ISO 639-1
+    verified:      NotRequired[bool]        # requires email scope
+    email:         NotRequired[str | None]  # requires email scope
+    flags:         NotRequired[int]
+    premium_type:  NotRequired[int]
+    public_flags:  NotRequired[int]
 
-class DiscordUser(_DiscordUser, total=False):
-    bot:          bool
-    system:       bool
-    mfa_enabled:  bool
-    banner:       str | None
-    accent_color: int | None
-    locale:       str   # Probably ISO 639-1, but unspecified in spec
-    verified:     bool  # requires email scope
-    email:        str | None  # requires email scope
-    flags:        int
-    premium_type: int
-    public_flags: int
 
-
-class _DiscordGuildMember(TypedDict):
+class DiscordGuildMember(TypedDict):
     roles:     list[int]
     joined_at: str  # ISO 8601
     deaf:      bool
     mute:      bool
 
-
-class DiscordGuildMember(_DiscordGuildMember, total=False):
-    user:          DiscordUser
-    nick:          str | None
-    avatar:        str | None
-    premium_since: str | None  # ISO 8601
-    pending:       bool
-    permissions:   str
-    communcations_disabled_until: str | None  # ISO 8601
+    # Optional attributes
+    user:                         NotRequired[DiscordUser]
+    nick:                         NotRequired[str | None]
+    avatar:                       NotRequired[str | None]
+    premium_since:                NotRequired[str | None]  # ISO 8601
+    pending:                      NotRequired[bool]
+    permissions:                  NotRequired[str]
+    communcations_disabled_until: NotRequired[str | None]  # ISO 8601
 
 
 class DiscordRoleTags(TypedDict, total=False):
@@ -205,7 +193,7 @@ class MinimalRole(TypedDict):
     color: int
 
 
-class _DiscordRole(MinimalRole):
+class DiscordRole(MinimalRole):
     id:          int
     hoist:       bool
     position:    int
@@ -213,8 +201,6 @@ class _DiscordRole(MinimalRole):
     managed:     bool
     mentionable: bool
 
-
-class DiscordRole(_DiscordRole, total=False):
-    icon:          str | None
-    unicode_emoji: str | None
-    tags:          DiscordRoleTags
+    icon:          NotRequired[str | None]
+    unicode_emoji: NotRequired[str | None]
+    tags:          NotRequired[DiscordRoleTags]

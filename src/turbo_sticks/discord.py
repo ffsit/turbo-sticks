@@ -80,7 +80,11 @@ def render_username(discord_user: DiscordUser | None) -> str:
     if discord_user is None:
         return '<span class="gray"><i>Not connected</i></span>'
     username = discord_user.get('username', '')
-    discriminator = discord_user.get('discriminator', '0000')
+    discriminator = discord_user.get('discriminator', '0')
+    # migrated users have a discriminator of 0, once the field is
+    # removed entirely we want to stop showing it as well
+    if discriminator == '0':
+        return username
     return f'{username}<span class="gray">#{discriminator}</span>'
 
 

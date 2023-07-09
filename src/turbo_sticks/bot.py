@@ -128,7 +128,7 @@ class SticksBot(discord.Client):
         self.tree.clear_commands(guild=guild)
 
         async def username_autocomplete(
-            interaction: discord.Interaction,
+            interaction: discord.Interaction[SticksBot],
             current: str
         ) -> list[app_commands.Choice[str]]:
 
@@ -169,7 +169,7 @@ class SticksBot(discord.Client):
         @app_commands.autocomplete(username=username_autocomplete)
         @app_commands.default_permissions(send_messages=True)
         async def whisper(
-            context: discord.Interaction,
+            context: discord.Interaction[SticksBot],
             username: str,
             message: str
         ) -> None:
@@ -196,7 +196,7 @@ class SticksBot(discord.Client):
         )
         @app_commands.default_permissions(send_messages=True)
         async def reply(
-            context: discord.Interaction,
+            context: discord.Interaction[SticksBot],
             message: str
         ) -> None:
 
@@ -231,7 +231,7 @@ class SticksBot(discord.Client):
             description='Show who\'s online in the webchat'
         )
         @app_commands.default_permissions(send_messages=True)
-        async def online(context: discord.Interaction) -> None:
+        async def online(context: discord.Interaction[SticksBot]) -> None:
             member = context.user
             assert isinstance(member, discord.Member)
             await context.response.send_message(
@@ -246,7 +246,7 @@ class SticksBot(discord.Client):
         )
         @app_commands.default_permissions(moderate_members=True)
         async def broadcast(
-            context: discord.Interaction,
+            context: discord.Interaction[SticksBot],
             message: str
         ) -> None:
 
@@ -742,7 +742,7 @@ class SticksBot(discord.Client):
             return False
 
         assert isinstance(message.channel, discord.TextChannel)
-        if str(message.channel.guild.id) != config.discord.server_id:
+        if message.channel.guild.id != config.discord.server_id:
             return False
 
         if message.channel.name != config.discord.live_channel:
@@ -884,7 +884,7 @@ class SticksBot(discord.Client):
             util.zhdel(self.redis, 'webchat-message-history', *filtered_ids)
 
     async def on_guild_available(self, guild: discord.Guild) -> None:
-        if str(guild.id) != config.discord.server_id:
+        if guild.id != config.discord.server_id:
             return
 
         await self.refresh_webhook()
@@ -903,7 +903,7 @@ class SticksBot(discord.Client):
         await self.init_slash_commands(guild)
 
     async def on_guild_unavailable(self, guild: discord.Guild) -> None:
-        if str(guild.id) == config.discord.server_id:
+        if guild.id == config.discord.server_id:
             await self.publish_event('discord_disconnect')
             self.redis.delete('discord-online-members')
             self.webchat_heartbeat.cancel()

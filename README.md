@@ -50,6 +50,11 @@ Upgrade
 
 Change Log
 -----------
+#### 3.1.0
+Updated to pydantic 2.0
+Updated version pins
+Hides the discriminator for Discord users that no longer have one
+Addded Cache-Control: no-store headers to non-public views
 #### 3.0.3
 Updated version pins
 #### 3.0.2

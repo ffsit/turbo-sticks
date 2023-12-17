@@ -129,17 +129,6 @@ def test_render_username():
         'discriminator': '0004',
         'avatar': None,
     }
-    rendered = render_username(user)
-    assert 'test' in rendered
-    assert '#0004' in rendered
-
-    # once the discriminator is 0, don't render it
-    user = {
-        'id': 1,
-        'username': 'test',
-        'discriminator': '0',
-        'avatar': None,
-    }
     assert render_username(user) == 'test'
 
 

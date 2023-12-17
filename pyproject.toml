@@ -1,7 +1,7 @@
 [build-system]
 requires = [
-	"setuptools>=42",
-	"wheel"
+    "setuptools>=42",
+    "wheel"
 ]
 build_backend = "setuptools.build_meta"
 
@@ -51,12 +51,3 @@ warn_untyped_fields = true
 module = "turbo_sticks.*"
 disallow_any_generics = true
 disallow_untyped_defs = true
-
-[[tool.mypy.overrides]]
-module = [
-	"discord.ext.test.*",
-	"gevent.*",
-	"requests_oauthlib.*",
-	"uwsgi.*"
-]
-ignore_missing_imports = true

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import gevent
+import gevent.select
 import logging
 from psycopg import Warning as DBWarning, Error as DBError
 from psycopg_pool import ConnectionPool, PoolTimeout
@@ -19,8 +20,8 @@ logger = logging.getLogger('sticks.db')
 class DBSession:  # pragma: no cover
 
     _instance:   ClassVar[DBSession | None] = None
-    _pool:       ConnectionPool | None
-    _check_job:  gevent.greenlet.Greenlet | None
+    _pool:       ConnectionPool[Connection[tuple[Any, ...]]] | None
+    _check_job:  gevent.greenlet.Greenlet[[], None] | None
 
     def __new__(cls) -> DBSession:
         if cls._instance is None:

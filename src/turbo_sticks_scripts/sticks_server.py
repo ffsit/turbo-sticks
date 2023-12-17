@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # Monkey Patching
 # In order for this to work we put the scripts into a separate package so
 # turbo_sticks does not get loaded before monkey patching can occur
@@ -6,9 +8,8 @@ from gevent import monkey; monkey.patch_all()  # noqa: E702
 import argparse
 import logging
 import os
-from collections.abc import Callable
 from gevent.pywsgi import WSGIServer
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import turbo_sticks.config as config
 from turbo_sticks.csrf import TokenClerk
@@ -17,6 +18,8 @@ from turbo_sticks.websockets import init_redis_state
 from turbo_sticks.wsgi import WSGIApplication
 
 if TYPE_CHECKING:
+    from _typeshed.wsgi import StartResponse, WSGIEnvironment
+    from collections.abc import Iterable
     from turbo_sticks.types import HTTPHeader
 
 # the kinds of static files we will serve
@@ -69,9 +72,9 @@ def main() -> None:
     # NOTE: We'll serve files ourselves, which is inefficient, but since
     #       this is mostly used for testing without uwsgi we don't care
     def application_which_serves_static_files(
-        env: dict[str, Any],
-        start_response: Callable[[str, list['HTTPHeader']], None]
-    ) -> list[bytes]:
+        env: WSGIEnvironment,
+        start_response: StartResponse
+    ) -> Iterable[bytes]:
 
         path = env['PATH_INFO']
         if (cached := cached_files.get(path)) is not None:

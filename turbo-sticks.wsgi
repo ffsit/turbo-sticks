@@ -30,4 +30,4 @@ init_redis_state()
 application = WSGIApplication(csrf_clerk)
 
 # uWSGI exit hook
-uwsgi.atexit = application.shutdown
+uwsgi.atexit = application.shutdown  # type:ignore[attr-defined]

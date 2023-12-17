@@ -4,9 +4,9 @@ import os
 import yaml
 from collections.abc import Iterator
 from contextlib import contextmanager
+from pydantic_core.core_schema import FieldValidationInfo
 from pydantic import (
-    BaseModel, FieldValidationInfo, PositiveInt, PostgresDsn, SecretStr,
-    field_validator
+    BaseModel, PositiveInt, PostgresDsn, SecretStr, field_validator
 )
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource
 from typing import Any

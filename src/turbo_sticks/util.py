@@ -103,8 +103,8 @@ def retrieve_post_vars(env: dict[str, Any]) -> MultiDict:
     return parse_qs(request_body.decode('utf-8'))
 
 
-def retrieve_cookies(env: dict[str, Any]) -> SimpleCookie[bytes]:
-    cookies: SimpleCookie[bytes] = SimpleCookie()
+def retrieve_cookies(env: dict[str, Any]) -> SimpleCookie:
+    cookies = SimpleCookie()
     cookies.load(env.get('HTTP_COOKIE', ''))
     return cookies
 

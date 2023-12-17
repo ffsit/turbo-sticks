@@ -118,7 +118,7 @@ def get_current_token() -> OAuth2Token:
             if int(token['expires_in']) < 0:
                 client = OAuth2Session(config.patreon.client_id, token=token)
                 client_secret = config.patreon.client_secret
-                new_token = client.refresh_token(
+                new_token: OAuth2Token = client.refresh_token(  # type:ignore
                     config.patreon.token_url,
                     client_id=config.patreon.client_id,
                     client_secret=client_secret.get_secret_value()

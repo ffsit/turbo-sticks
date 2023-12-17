@@ -12,8 +12,11 @@ def main() -> None:
         cid = campaign['id']
         print('========================================')
         print(f'Campaign: {name} ({cid})')
-        for tier in campaign['tiers']:
-            dollars = tier['amount_cents'] // 100
+        tiers = campaign['tiers']
+        assert isinstance(tiers, list)
+        for tier in tiers:
+            assert isinstance(tier, dict)
+            dollars = tier['amount_cents'] // 100  # type:ignore[operator]
             title = tier['title']
             tid = tier['id']
             print(f'    Tier: ${dollars}+ {title} ({tid})')

@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import turbo_sticks.config as config
 from turbo_sticks.db import DBSession
@@ -12,8 +11,9 @@ from turbo_sticks.views import views, error_view
 from turbo_sticks.websockets import channels
 
 if TYPE_CHECKING:
+    from _typeshed.wsgi import StartResponse, WSGIEnvironment
+    from collections.abc import Iterable
     from turbo_sticks.csrf import TokenClerk
-    from turbo_sticks.types import HTTPHeader
 
 
 logger = logging.getLogger('sticks')
@@ -26,9 +26,9 @@ class WSGIApplication:
 
     def __call__(
         self,
-        env: dict[str, Any],
-        start_response: Callable[[str, list[HTTPHeader]], None]
-    ) -> list[bytes]:
+        env: WSGIEnvironment,
+        start_response: StartResponse
+    ) -> Iterable[bytes]:
 
         path = env['PATH_INFO']
         response_body, response_headers, status = error_view(

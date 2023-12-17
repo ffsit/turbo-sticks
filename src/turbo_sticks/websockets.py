@@ -33,6 +33,8 @@ except ModuleNotFoundError:
 
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from greenlet import greenlet as greenlet_t
     from redis.client import PubSub
     from typing import Literal
     from .types import (
@@ -231,16 +233,16 @@ ACL_rank_map: dict[ACL, Rank] = {
 class Client:
 
     id:                str
-    greenlet:          gevent.greenlet.Greenlet | None
+    greenlet:          greenlet_t | None
     channel:           Channel
     env:               dict[str, Any]
-    fd_select_job:     gevent.greenlet.Greenlet | None
-    jobs:              list[gevent.greenlet.Greenlet]
+    fd_select_job:     gevent.greenlet.Greenlet[[], None] | None
+    jobs:              list[gevent.greenlet.Greenlet[..., Any]]
     job_state:         JobState
     event:             gevent.event.Event
     merge_event:       gevent.event.Event
-    client_send_queue: gevent.queue.Queue
-    client_recv_queue: gevent.queue.Queue
+    client_send_queue: gevent.queue.Queue[bytes]
+    client_recv_queue: gevent.queue.Queue[bytes]
     context:           dict[str, Any]
     state:             ClientState
 
@@ -396,11 +398,18 @@ class Client:
         self.state = ClientState.exited
         self.job_state = JobState.exited
         if block:
-            gevent.joinall(self.jobs + [self.greenlet], timeout=timeout)
+            greenlets: 'Sequence[greenlet_t]'
+            if self.greenlet is None:
+                greenlets = self.jobs
+            else:
+                greenlets = [self.greenlet]
+                greenlets.extend(self.jobs)
+            gevent.joinall(greenlets, timeout=timeout)
 
     def join(self, timeout: float | None = None) -> None:
         if self.greenlet is not None:
-            self.greenlet.join(timeout=timeout)
+            # this could be a basic greenlet, which doesn't have a join method
+            gevent.joinall((self.greenlet, ), timeout=timeout)
 
     def on_kill(self) -> None:
         self.kill_jobs(timeout=0.2)
@@ -440,7 +449,8 @@ class Channel:
     path:             str
     uri:              str
     min_access_level: ACL
-    jobs:             list[gevent.greenlet.Greenlet]
+    # we annotate greenlet_t for simplicity, since list isn't covariant
+    jobs:             list[greenlet_t]
     job_state:        JobState
 
     def __init__(
@@ -559,16 +569,16 @@ class Channel:
     def close(self, timeout: float | None = None) -> None:
         self.job_state = JobState.exited
         with self.client_lock:
-            greelets = []
+            greenlets = []
             for client in self.clients.values():
                 client.exit(block=False)
                 if client.greenlet is not None:
-                    greelets.append(client.greenlet)
+                    greenlets.append(client.greenlet)
 
             self.clients = {}
 
         # this needs to happen outside the lock otherwise we get a deadlock
-        gevent.joinall(greelets + self.jobs, timeout=timeout)
+        gevent.joinall(greenlets + self.jobs, timeout=timeout)
         self.jobs = []
 
 

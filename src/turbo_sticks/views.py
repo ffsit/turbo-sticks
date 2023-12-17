@@ -397,7 +397,7 @@ def oauth_callback_view(
             authorization_response=authorization_response,
             client_secret=config.mastodon.client_secret.get_secret_value()
         )
-        session_token = turbo_session.create_session(token)
+        session_token = turbo_session.create_session(token)  # type:ignore
 
         if not session_token:
             return error_view('Internal Error',
@@ -478,7 +478,7 @@ def discord_callback_view(
                                   'a different Discord account. '
                                   'Please try again.')
         user.set_discord_id(discord_id)
-        discord.add_turbo_role(discord_id, token)
+        discord.add_turbo_role(discord_id, token)  # type:ignore[arg-type]
 
         if not redirect_to:
             redirect_to = '/'

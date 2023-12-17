@@ -50,6 +50,9 @@ Upgrade
 
 Change Log
 -----------
+#### 3.1.1
+Updated version pins
+Disables rendering of Discord discriminator entirely
 #### 3.1.0
 Updated to pydantic 2.0
 Updated version pins

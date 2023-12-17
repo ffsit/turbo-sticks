@@ -2,7 +2,7 @@ import logging
 
 from turbo_sticks.config import debug_mode
 
-__version__ = '3.1.0'
+__version__ = '3.1.1'
 
 # Setup logging
 logging.basicConfig(

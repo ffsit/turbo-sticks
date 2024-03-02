@@ -92,10 +92,10 @@ def retrieve_get_vars(env: dict[str, Any]) -> MultiDict:
 
 def retrieve_request_body(env: dict[str, Any]) -> bytes:
     try:
-        request_body_size = int(env.get('CONTENT_LENGTH', 0))
+        size = int(env.get('CONTENT_LENGTH', 0))
     except (ValueError, TypeError):
-        request_body_size = 0
-    return env['wsgi.input'].read(request_body_size)
+        size = 0
+    return env['wsgi.input'].read(size)  # type:ignore[no-any-return]
 
 
 def retrieve_post_vars(env: dict[str, Any]) -> MultiDict:
@@ -261,7 +261,7 @@ def zhaddex(
         pipe.zadd(key, {field_key: score})
         pipe.setex(field_key, ttl, value)
 
-    redis.transaction(_zhaddex, key)
+    redis.transaction(_zhaddex, key)  # type:ignore[no-untyped-call]
 
 
 def zhttl(redis: Redis[bytes], key: str, field: str) -> int:
@@ -286,7 +286,7 @@ def zhmod(redis: Redis[bytes], key: str, field: str, value: _Value) -> None:
         if ttl > 0:
             pipe.setex(field_key, ttl, value)
 
-    redis.transaction(_zhmod, key)
+    redis.transaction(_zhmod, key)  # type:ignore[no-untyped-call]
 
 
 def zhdel(redis: Redis[bytes], key: str, *fields: str) -> None:
@@ -320,7 +320,7 @@ def zhgetall(redis: Redis[bytes], key: str) -> list[bytes]:
                 pipe.zrem(key, *expired)
             result = [v for v in values if v is not None]
 
-    redis.transaction(_zhgetall, key)
+    redis.transaction(_zhgetall, key)  # type:ignore[no-untyped-call]
     return result
 
 
@@ -363,7 +363,7 @@ def shmod(redis: Redis[bytes], key: str, field: str, value: _Value) -> None:
         if ttl > 0:
             pipe.setex(field_key, ttl, value)
 
-    redis.transaction(_shmod, key)
+    redis.transaction(_shmod, key)  # type:ignore[no-untyped-call]
 
 
 def shdel(redis: Redis[bytes], key: str, *fields: str) -> None:
@@ -405,5 +405,5 @@ def shgetall(redis: Redis[bytes], key: str) -> list[bytes]:
                 pipe.srem(key, *expired)
             result = [v for v in values if v is not None]
 
-    redis.transaction(_shgetall, key)
+    redis.transaction(_shgetall, key)  # type:ignore[no-untyped-call]
     return result

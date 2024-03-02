@@ -35,9 +35,10 @@ python_version = "3.10"
 namespace_packages = true
 explicit_package_bases = true
 follow_imports = "silent"
-warn_redundant_casts = true
 warn_unreachable = true
 warn_unused_ignores = true
+strict = true
+no_implicit_reexport = false
 plugins = ["pydantic.mypy"]
 mypy_path = "$MYPY_CONFIG_FILE_DIR/src"
 
@@ -46,8 +47,3 @@ init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliased = true
 warn_untyped_fields = true
-
-[[tool.mypy.overrides]]
-module = "turbo_sticks.*"
-disallow_any_generics = true
-disallow_untyped_defs = true

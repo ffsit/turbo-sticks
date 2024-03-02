@@ -85,35 +85,35 @@ class BaseUser:
         if uid <= 0:
             return False
 
-        with self.db.connection() as conn:
-            with conn.cursor() as cur:
-                sql = """
-                        SELECT username,
-                               discord_id,
-                               app_password,
-                               app_password_hash,
-                               banned
-                          FROM users
-                         WHERE id = %s"""
-                cur.execute(sql, (uid,))
-                row = cur.fetchone()
-                if row is None:
-                    return False
-                self.uid = uid
-                self.username = row[0]
-                self.discord_id = row[1]
-                self.app_password = row[2]
-                self.app_password_hash = row[3]
-                self.banned = row[4]
-                if self.banned is True:
-                    self.access_level = ACL.guest
-                else:
-                    assert self.username is not None
-                    self.access_level = config.special_users.get(
-                        self.username,
-                        ACL.turbo
-                    )
-                return self.uid > 0
+        with self.db.connection() as conn, conn.cursor() as cur:
+            sql = """
+                    SELECT username,
+                           discord_id,
+                           app_password,
+                           app_password_hash,
+                           banned
+                      FROM users
+                     WHERE id = %s"""
+            cur.execute(sql, (uid,))
+            row = cur.fetchone()
+            if row is None:
+                return False
+
+            self.uid = uid
+            self.username = row[0]
+            self.discord_id = row[1]
+            self.app_password = row[2]
+            self.app_password_hash = row[3]
+            self.banned = row[4]
+            if self.banned is True:
+                self.access_level = ACL.guest
+            else:
+                assert self.username is not None
+                self.access_level = config.special_users.get(
+                    self.username,
+                    ACL.turbo
+                )
+            return self.uid > 0
 
     def reload(self) -> bool:
         return self.load(self.uid)
@@ -132,36 +132,34 @@ class BaseUser:
             app_password_plain.encode('utf-8')
         ).hexdigest()
 
-        with self.db.connection() as conn:
-            with conn.cursor() as cur:
-                sql = """
-                        UPDATE users
-                           SET app_password = %s,
-                               app_password_hash = %s
-                         WHERE id = %s"""
+        with self.db.connection() as conn, conn.cursor() as cur:
+            sql = """
+                    UPDATE users
+                       SET app_password = %s,
+                           app_password_hash = %s
+                     WHERE id = %s"""
 
-                cur.execute(sql, (
-                    self.app_password,
-                    self.app_password_hash,
-                    self.uid
-                ))
+            cur.execute(sql, (
+                self.app_password,
+                self.app_password_hash,
+                self.uid
+            ))
 
     def set_discord_id(self, discord_id: int | None) -> None:
         if self.uid <= 0:
             return
 
         self.discord_id = discord_id
-        with self.db.connection() as conn:
-            with conn.cursor() as cur:
-                sql = """
-                        UPDATE users
-                           SET discord_id = %s
-                         WHERE id = %s"""
+        with self.db.connection() as conn, conn.cursor() as cur:
+            sql = """
+                    UPDATE users
+                       SET discord_id = %s
+                     WHERE id = %s"""
 
-                cur.execute(sql, (
-                    self.discord_id,
-                    self.uid
-                ))
+            cur.execute(sql, (
+                self.discord_id,
+                self.uid
+            ))
 
     def ban(self) -> None:
         if self.uid <= 0:
@@ -172,17 +170,16 @@ class BaseUser:
         #       query to the mix already anyways.
         self.banned = True
         self.access_level = ACL.guest
-        with self.db.connection() as conn:
-            with conn.cursor() as cur:
-                sql = """
-                        UPDATE users
-                           SET banned = %s
-                         WHERE id = %s"""
+        with self.db.connection() as conn, conn.cursor() as cur:
+            sql = """
+                    UPDATE users
+                       SET banned = %s
+                     WHERE id = %s"""
 
-                cur.execute(sql, (
-                    True,
-                    self.uid
-                ))
+            cur.execute(sql, (
+                True,
+                self.uid
+            ))
 
     def unban(self) -> None:
         if self.uid <= 0:
@@ -194,42 +191,40 @@ class BaseUser:
         self.banned = False
         assert self.username is not None
         self.access_level = config.special_users.get(self.username, ACL.turbo)
-        with self.db.connection() as conn:
-            with conn.cursor() as cur:
-                sql = """
-                        UPDATE users
-                           SET banned = %s
-                         WHERE id = %s"""
+        with self.db.connection() as conn, conn.cursor() as cur:
+            sql = """
+                    UPDATE users
+                       SET banned = %s
+                     WHERE id = %s"""
 
-                cur.execute(sql, (
-                    False,
-                    self.uid
-                ))
+            cur.execute(sql, (
+                False,
+                self.uid
+            ))
 
     # live reloaded version of banned property, that also refreshes it
     def is_banned(self) -> bool:
         if self.uid <= 0:
             return self.banned
 
-        with self.db.connection() as conn:
-            with conn.cursor() as cur:
-                sql = """
-                        SELECT banned
-                          FROM users
-                         WHERE id = %s"""
+        with self.db.connection() as conn, conn.cursor() as cur:
+            sql = """
+                    SELECT banned
+                      FROM users
+                     WHERE id = %s"""
 
-                cur.execute(sql, (self.uid, ))
-                row = cur.fetchone()
-                if row is not None and row[0] is not self.banned:
-                    self.banned = row[0]
-                    if self.banned:
-                        self.access_level = ACL.guest
-                    else:
-                        assert self.username is not None
-                        self.access_level = config.special_users.get(
-                            self.username,
-                            ACL.turbo
-                        )
+            cur.execute(sql, (self.uid, ))
+            row = cur.fetchone()
+            if row is not None and row[0] is not self.banned:
+                self.banned = row[0]
+                if self.banned:
+                    self.access_level = ACL.guest
+                else:
+                    assert self.username is not None
+                    self.access_level = config.special_users.get(
+                        self.username,
+                        ACL.turbo
+                    )
         return self.banned
 
     # Static Methods
@@ -239,20 +234,19 @@ class BaseUser:
             return 0
 
         db = DBSession()
-        with db.connection() as conn:
-            with conn.cursor() as cur:
-                if fuzzy:
-                    sql = """
-                        SELECT id
-                          FROM users
-                         WHERE LOWER(username) = LOWER(%s)"""
-                else:
-                    sql = 'SELECT id FROM users WHERE username = %s'
-                cur.execute(sql, (username,))
-                row = cur.fetchone()
-                if row is not None and row[0] > 0:
-                    return row[0]
-                return 0
+        with db.connection() as conn, conn.cursor() as cur:
+            if fuzzy:
+                sql = """
+                    SELECT id
+                      FROM users
+                     WHERE LOWER(username) = LOWER(%s)"""
+            else:
+                sql = 'SELECT id FROM users WHERE username = %s'
+            cur.execute(sql, (username,))
+            row: tuple[int] | None = cur.fetchone()
+            if row is not None and row[0] > 0:
+                return row[0]
+            return 0
 
     @staticmethod
     def uid_from_mastodon_id(mastodon_id: int) -> int:
@@ -260,14 +254,13 @@ class BaseUser:
             return 0
 
         db = DBSession()
-        with db.connection() as conn:
-            with conn.cursor() as cur:
-                sql = 'SELECT id FROM users WHERE mastodon_id = %s'
-                cur.execute(sql, (mastodon_id,))
-                row = cur.fetchone()
-                if row is not None and row[0] > 0:
-                    return row[0]
-                return 0
+        with db.connection() as conn, conn.cursor() as cur:
+            sql = 'SELECT id FROM users WHERE mastodon_id = %s'
+            cur.execute(sql, (mastodon_id,))
+            row: tuple[int] | None = cur.fetchone()
+            if row is not None and row[0] > 0:
+                return row[0]
+            return 0
 
     @staticmethod
     def get_access_level(user: BaseUser | None) -> ACL:
@@ -330,13 +323,12 @@ class User(BaseUser):
             new_username = self.account.get('username', '')
             if new_username and new_username != self.username:
                 self.username = new_username
-                with self.db.connection() as conn:
-                    with conn.cursor() as cur:
-                        sql = """
-                                UPDATE users
-                                   SET username = %s
-                                 WHERE id = %s"""
-                        cur.execute(sql, (self.username, self.uid))
+                with self.db.connection() as conn, conn.cursor() as cur:
+                    sql = """
+                            UPDATE users
+                               SET username = %s
+                             WHERE id = %s"""
+                    cur.execute(sql, (self.username, self.uid))
         return True
 
     def _create_new_user(self) -> None:
@@ -350,28 +342,27 @@ class User(BaseUser):
                 app_password_plain.encode('utf-8')
             ).hexdigest()
 
-            with self.db.connection() as conn:
-                with conn.cursor() as cur:
-                    sql = """
-                            INSERT INTO users
-                            (
-                                mastodon_id,
-                                username,
-                                app_password,
-                                app_password_hash
-                            )
-                            VALUES
-                            (
-                                %s,
-                                %s,
-                                %s,
-                                %s
-                            )"""
+            with self.db.connection() as conn, conn.cursor() as cur:
+                sql = """
+                        INSERT INTO users
+                        (
+                            mastodon_id,
+                            username,
+                            app_password,
+                            app_password_hash
+                        )
+                        VALUES
+                        (
+                            %s,
+                            %s,
+                            %s,
+                            %s
+                        )"""
 
-                    cur.execute(sql, (
-                        self.mastodon_id,
-                        self.username,
-                        self.app_password,
-                        self.app_password_hash
-                    ))
+                cur.execute(sql, (
+                    self.mastodon_id,
+                    self.username,
+                    self.app_password,
+                    self.app_password_hash
+                ))
             self.uid = User.uid_from_mastodon_id(self.mastodon_id)

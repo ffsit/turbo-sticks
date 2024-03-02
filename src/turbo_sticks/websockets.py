@@ -584,8 +584,8 @@ class Channel:
 
 def webchat_user_key(member: dict[str, Any]) -> str:
     if member['discord_id']:
-        return member['discord_id']
-    return member['username']
+        return member['discord_id']  # type:ignore[no-any-return]
+    return member['username']  # type:ignore[no-any-return]
 
 
 class DiscordClient(Client):
@@ -692,7 +692,7 @@ class DiscordClient(Client):
         }
 
     def is_alive(self) -> bool:
-        heartbeat = self.context.get('heartbeat')
+        heartbeat: float | None = self.context.get('heartbeat')
         if heartbeat is None:
             return False
         return time.monotonic() - heartbeat <= self.heartbeat_interval*2

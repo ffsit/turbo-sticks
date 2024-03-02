@@ -270,7 +270,7 @@ class SticksBot(discord.Client):
             await self.tree.sync(guild=guild)
 
     def redis_next_message(self) -> list[bytes]:
-        return self.pubsub.parse_response(False)
+        return self.pubsub.parse_response(False)  # type:ignore[no-any-return]
 
     @tasks.loop(seconds=0.1)
     async def redis_loop(self) -> None:

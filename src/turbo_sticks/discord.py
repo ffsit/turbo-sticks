@@ -28,7 +28,7 @@ def get_member(discord_id: int | None) -> DiscordGuildMember | None:
     if discord_id is None:
         return None
     member_url = f'{guild_url}/members/{discord_id}'
-    return requests.get(
+    return requests.get(  # type:ignore[no-any-return]
         member_url,
         headers=request_headers,
         timeout=(5, 10)
@@ -43,7 +43,7 @@ def get_user(member: DiscordGuildMember | None) -> DiscordUser | None:
 
 def get_roles() -> list[DiscordRole]:
     get_roles_url = f'{guild_url}/roles'
-    return requests.get(
+    return requests.get(  # type:ignore[no-any-return]
         get_roles_url,
         headers=request_headers,
         timeout=(5, 10)

@@ -22,38 +22,37 @@ if TYPE_CHECKING:
 
 def create_session(oauth_token: OAuth2Token) -> str:
     db = DBSession()
-    with db.connection() as conn:
-        with conn.cursor() as cur:
-            session_token = generate_random_token(128)
-            sql = SQL("""
-                    INSERT INTO sessions
-                    (
-                        session_token,
-                        access_token,
-                        refresh_token,
-                        token_type,
-                        token_expires_on,
-                        session_expires_on
-                    )
-                    VALUES
-                    (
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        now() + interval '{} seconds'
-                    )""").format(Literal(config.session.max_age))
+    with db.connection() as conn, conn.cursor() as cur:
+        session_token = generate_random_token(128)
+        sql = SQL("""
+                INSERT INTO sessions
+                (
+                    session_token,
+                    access_token,
+                    refresh_token,
+                    token_type,
+                    token_expires_on,
+                    session_expires_on
+                )
+                VALUES
+                (
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    now() + interval '{} seconds'
+                )""").format(Literal(config.session.max_age))
 
-            expires_in = oauth_token.get('expires_in', config.session.max_age)
-            cur.execute(sql, (
-                session_token,
-                oauth_token['access_token'],
-                oauth_token.get('refresh_token', ''),
-                oauth_token['token_type'],
-                int(expires_in) + int(time())
-            ))
-            return session_token
+        expires_in = oauth_token.get('expires_in', config.session.max_age)
+        cur.execute(sql, (
+            session_token,
+            oauth_token['access_token'],
+            oauth_token.get('refresh_token', ''),
+            oauth_token['token_type'],
+            int(expires_in) + int(time())
+        ))
+        return session_token
 
 
 def delete_session(session_token: str | None) -> None:
@@ -61,13 +60,12 @@ def delete_session(session_token: str | None) -> None:
         return
 
     db = DBSession()
-    with db.connection() as conn:
-        with conn.cursor() as cur:
-            sql = """
-                    DELETE
-                      FROM sessions
-                     WHERE session_token = %s"""
-            cur.execute(sql, (session_token,))
+    with db.connection() as conn, conn.cursor() as cur:
+        sql = """
+                DELETE
+                  FROM sessions
+                 WHERE session_token = %s"""
+        cur.execute(sql, (session_token,))
 
 
 def get_session(env: dict[str, Any]) -> str | None:
@@ -86,28 +84,27 @@ def retrieve_token_from_session(
         return None
 
     db = DBSession()
-    with db.connection() as conn:
-        with conn.cursor() as cur:
-            sql = """
-                    SELECT access_token,
-                           refresh_token,
-                           token_type,
-                           token_expires_on
-                      FROM sessions
-                     WHERE session_token = %s
-                       AND session_expires_on > now()"""
+    with db.connection() as conn, conn.cursor() as cur:
+        sql = """
+                SELECT access_token,
+                       refresh_token,
+                       token_type,
+                       token_expires_on
+                  FROM sessions
+                 WHERE session_token = %s
+                   AND session_expires_on > now()"""
 
-            cur.execute(sql, (session_token,))
-            row = cur.fetchone()
-            if row is None:
-                return None
+        cur.execute(sql, (session_token,))
+        row = cur.fetchone()
+        if row is None:
+            return None
 
-            return {
-                'access_token': row[0],
-                'refresh_token': row[1],
-                'token_type': row[2],
-                'expires_in': str(row[3] - int(time()))
-            }
+        return {
+            'access_token': row[0],
+            'refresh_token': row[1],
+            'token_type': row[2],
+            'expires_in': str(row[3] - int(time()))
+        }
 
 
 def retrieve_oauth_account(
@@ -145,7 +142,7 @@ def retrieve_oauth_account(
     if account.get('username', '') != account.get('acct', '@'):
         return None
 
-    return account
+    return account  # type:ignore[no-any-return]
 
 
 # generates OAuth state, remembering current location

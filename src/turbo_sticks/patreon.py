@@ -79,68 +79,66 @@ def _init_oauth(cursor: psycopg.Cursor[Any]) -> None:
 
 def init_oauth() -> None:
     db = DBSession()
-    with db.connection() as conn:
-        with conn.cursor() as cur:
-            _init_oauth(cur)
+    with db.connection() as conn, conn.cursor() as cur:
+        _init_oauth(cur)
 
 
 def get_current_token() -> OAuth2Token:
     db = DBSession()
-    with db.connection() as conn:
-        with conn.cursor() as cur:
-            sql = """
-                    SELECT access_token,
-                           refresh_token,
-                           token_expires_on
-                      FROM oauth
-                     WHERE app_name = 'patreon'"""
+    with db.connection() as conn, conn.cursor() as cur:
+        sql = """
+                SELECT access_token,
+                       refresh_token,
+                       token_expires_on
+                  FROM oauth
+                 WHERE app_name = 'patreon'"""
 
-            cur.execute(sql)
-            row = cur.fetchone()
-            access_token = config.patreon.access_token
-            refresh_token = config.patreon.refresh_token
-            token: OAuth2Token = {
-                'access_token': access_token.get_secret_value(),
-                'refresh_token': refresh_token.get_secret_value(),
-                'token_type': 'Bearer',
-                'expires_in': '-1'
-            }
-            if row is None:
-                _init_oauth(cur)
+        cur.execute(sql)
+        row = cur.fetchone()
+        access_token = config.patreon.access_token
+        refresh_token = config.patreon.refresh_token
+        token: OAuth2Token = {
+            'access_token': access_token.get_secret_value(),
+            'refresh_token': refresh_token.get_secret_value(),
+            'token_type': 'Bearer',
+            'expires_in': '-1'
+        }
+        if row is None:
+            _init_oauth(cur)
+        else:
+            token['access_token'] = util.decrypt(row[0])
+            token['refresh_token'] = util.decrypt(row[1])
+            if row[2] is not None:
+                token['expires_in'] = str(row[2] - int(time()))
             else:
-                token['access_token'] = util.decrypt(row[0])
-                token['refresh_token'] = util.decrypt(row[1])
-                if row[2] is not None:
-                    token['expires_in'] = str(row[2] - int(time()))
-                else:
-                    token['expires_in'] = '-1'
+                token['expires_in'] = '-1'
 
-            if int(token['expires_in']) < 0:
-                client = OAuth2Session(config.patreon.client_id, token=token)
-                client_secret = config.patreon.client_secret
-                new_token: OAuth2Token = client.refresh_token(  # type:ignore
-                    config.patreon.token_url,
-                    client_id=config.patreon.client_id,
-                    client_secret=client_secret.get_secret_value()
-                )
+        if int(token['expires_in']) < 0:
+            client = OAuth2Session(config.patreon.client_id, token=token)
+            client_secret = config.patreon.client_secret
+            new_token: OAuth2Token = client.refresh_token(  # type:ignore
+                config.patreon.token_url,
+                client_id=config.patreon.client_id,
+                client_secret=client_secret.get_secret_value()
+            )
 
-                if new_token != token:
-                    token = new_token
-                    expires_in = token.get('expires_in',
-                                           config.session.max_age)
-                    sql = """
-                            UPDATE oauth
-                               SET access_token = %s,
-                                   refresh_token = %s,
-                                   token_expires_on = %s
-                             WHERE app_name = 'patreon'"""
+            if new_token != token:
+                token = new_token
+                expires_in = token.get('expires_in',
+                                       config.session.max_age)
+                sql = """
+                        UPDATE oauth
+                           SET access_token = %s,
+                               refresh_token = %s,
+                               token_expires_on = %s
+                         WHERE app_name = 'patreon'"""
 
-                    cur.execute(sql, (
-                        util.encrypt(token['access_token']),
-                        util.encrypt(token['refresh_token']),
-                        int(expires_in) + int(time())
-                    ))
-            return token
+                cur.execute(sql, (
+                    util.encrypt(token['access_token']),
+                    util.encrypt(token['refresh_token']),
+                    int(expires_in) + int(time())
+                ))
+        return token
 
 
 # Application wide API calls (require application access token)

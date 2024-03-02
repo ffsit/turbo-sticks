@@ -38,7 +38,7 @@ class DBSession:  # pragma: no cover
 
         db_pool = config.db_pool
         self._pool = ConnectionPool(
-            db_pool.uri,
+            str(db_pool.uri),
             min_size=db_pool.min_size,
             max_size=db_pool.max_size,
             max_idle=db_pool.max_idle,

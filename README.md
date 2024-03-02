@@ -50,6 +50,8 @@ Upgrade
 
 Change Log
 -----------
+#### 3.1.2
+Updated version pins
 #### 3.1.1
 Updated version pins
 Disables rendering of Discord discriminator entirely

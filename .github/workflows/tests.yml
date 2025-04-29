@@ -29,7 +29,7 @@ jobs:
       - name: Install python packages
         run: |
           python -m pip install uv
-          uv pip install -r test_requirements.txt pytest-codecov[git]==0.7.0
+          uv pip install -r test_requirements.txt pytest-codecov[git]==0.7.0 --system
       - name: Lint with flake8
         id: lint
         run: |

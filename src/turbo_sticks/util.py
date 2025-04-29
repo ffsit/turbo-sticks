@@ -10,11 +10,11 @@ from html import escape
 from http.cookies import SimpleCookie
 from os import urandom, scandir, path
 from urllib.parse import parse_qs, quote_plus, urlencode
-from typing import cast, Any, TypeVar
 
 import turbo_sticks.config as config
 
-from typing import TYPE_CHECKING
+
+from typing import cast, Any, TYPE_CHECKING
 if TYPE_CHECKING:
     from redis import Redis
     from redis.client import Pipeline
@@ -25,8 +25,6 @@ if TYPE_CHECKING:
     from .types import Response
     from .types import StreamEmbed
     from .types import URLBase
-
-    _T = TypeVar('_T')
 
 
 # Exports
@@ -40,11 +38,11 @@ class Sentinel(Enum):
 
 
 # faster version of functools.cache, for functions without params
-def single_cache(func: Callable[[], _T]) -> Callable[[], _T]:
-    computed: _T | Sentinel = Sentinel.sentinel
+def single_cache[T](func: Callable[[], T]) -> Callable[[], T]:
+    computed: T | Sentinel = Sentinel.sentinel
 
     @functools.wraps(func)
-    def wrapper() -> _T:
+    def wrapper() -> T:
         nonlocal computed
         if computed is Sentinel.sentinel:
             computed = func()
@@ -222,7 +220,7 @@ def get_js_version() -> int:
     return js_version
 
 
-_Value = bytes | float | int | str
+type _Value = bytes | float | int | str
 
 
 # Custom Redis transactions

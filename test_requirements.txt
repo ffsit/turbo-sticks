@@ -1,0 +1,339 @@
+-e .
+aiodns==3.2.0
+    # via
+    #   -c requirements.txt
+    #   turbo-sticks
+aiohappyeyeballs==2.6.1
+    # via
+    #   -c requirements.txt
+    #   aiohttp
+aiohttp==3.11.18
+    # via
+    #   -c requirements.txt
+    #   discord-py
+    #   turbo-sticks
+aiosignal==1.3.2
+    # via
+    #   -c requirements.txt
+    #   aiohttp
+annotated-types==0.7.0
+    # via
+    #   -c requirements.txt
+    #   pydantic
+async-timeout==5.0.1
+    # via
+    #   -c requirements.txt
+    #   turbo-sticks
+attrs==25.3.0
+    # via
+    #   -c requirements.txt
+    #   aiohttp
+    #   flake8-bugbear
+bandit==1.8.3
+    # via turbo-sticks
+certifi==2025.4.26
+    # via
+    #   -c requirements.txt
+    #   requests
+    #   turbo-sticks
+cffi==1.17.1
+    # via
+    #   -c requirements.txt
+    #   cryptography
+    #   pycares
+    #   turbo-sticks
+cfgv==3.4.0
+    # via pre-commit
+charset-normalizer==3.4.1
+    # via
+    #   -c requirements.txt
+    #   requests
+    #   turbo-sticks
+coverage==7.8.0
+    # via
+    #   pytest-cov
+    #   turbo-sticks
+cryptography==44.0.2
+    # via
+    #   -c requirements.txt
+    #   turbo-sticks
+    #   types-pyopenssl
+    #   types-redis
+discord-py==2.5.2
+    # via
+    #   -c requirements.txt
+    #   dpytest
+    #   turbo-sticks
+distlib==0.3.9
+    # via virtualenv
+dpytest==0.7.0
+    # via turbo-sticks
+filelock==3.18.0
+    # via virtualenv
+flake8==7.2.0
+    # via
+    #   flake8-bugbear
+    #   turbo-sticks
+flake8-bugbear==24.12.12
+    # via turbo-sticks
+flaky==3.8.1
+    # via turbo-sticks
+frozenlist==1.6.0
+    # via
+    #   -c requirements.txt
+    #   aiohttp
+    #   aiosignal
+gevent==25.4.2
+    # via
+    #   -c requirements.txt
+    #   pytest-gevent
+    #   turbo-sticks
+greenlet==3.2.1
+    # via
+    #   -c requirements.txt
+    #   gevent
+    #   turbo-sticks
+identify==2.6.10
+    # via pre-commit
+idna==3.10
+    # via
+    #   -c requirements.txt
+    #   requests
+    #   turbo-sticks
+    #   yarl
+iniconfig==2.1.0
+    # via pytest
+markdown-it-py==3.0.0
+    # via rich
+mccabe==0.7.0
+    # via flake8
+mdurl==0.1.2
+    # via markdown-it-py
+mirakuru==2.6.0
+    # via
+    #   pytest-postgresql
+    #   pytest-redis
+multidict==6.4.3
+    # via
+    #   -c requirements.txt
+    #   aiohttp
+    #   yarl
+mypy==1.15.0
+    # via turbo-sticks
+mypy-extensions==1.1.0
+    # via mypy
+nodeenv==1.9.1
+    # via pre-commit
+oauthlib==3.2.2
+    # via
+    #   -c requirements.txt
+    #   requests-oauthlib
+    #   turbo-sticks
+packaging==25.0
+    # via
+    #   pytest
+    #   pytest-postgresql
+pbr==6.1.1
+    # via stevedore
+platformdirs==4.3.7
+    # via virtualenv
+pluggy==1.5.0
+    # via pytest
+port-for==0.7.4
+    # via
+    #   pytest-postgresql
+    #   pytest-redis
+pre-commit==4.2.0
+    # via
+    #   pre-commit-uv
+    #   turbo-sticks
+pre-commit-uv==4.1.4
+    # via turbo-sticks
+propcache==0.3.1
+    # via
+    #   -c requirements.txt
+    #   aiohttp
+    #   yarl
+psutil==7.0.0
+    # via mirakuru
+psycopg==3.2.6
+    # via
+    #   -c requirements.txt
+    #   pytest-postgresql
+    #   turbo-sticks
+psycopg-c==3.2.6
+    # via
+    #   -c requirements.txt
+    #   psycopg
+psycopg-pool==3.2.6
+    # via
+    #   -c requirements.txt
+    #   turbo-sticks
+pycares==4.6.1
+    # via
+    #   -c requirements.txt
+    #   aiodns
+pycodestyle==2.13.0
+    # via flake8
+pycparser==2.22
+    # via
+    #   -c requirements.txt
+    #   cffi
+pydantic==2.11.3
+    # via
+    #   -c requirements.txt
+    #   pydantic-settings
+    #   turbo-sticks
+pydantic-core==2.33.1
+    # via
+    #   -c requirements.txt
+    #   pydantic
+    #   turbo-sticks
+pydantic-settings==2.9.1
+    # via
+    #   -c requirements.txt
+    #   turbo-sticks
+pyflakes==3.3.2
+    # via flake8
+pygments==2.19.1
+    # via rich
+pytest==8.3.5
+    # via
+    #   dpytest
+    #   pytest-asyncio
+    #   pytest-cov
+    #   pytest-gevent
+    #   pytest-postgresql
+    #   pytest-redis
+    #   turbo-sticks
+pytest-asyncio==0.26.0
+    # via
+    #   dpytest
+    #   turbo-sticks
+pytest-cov==6.1.1
+    # via turbo-sticks
+pytest-gevent==1.1.0
+    # via turbo-sticks
+pytest-postgresql==7.0.1
+    # via turbo-sticks
+pytest-redis==3.1.3
+    # via turbo-sticks
+python-dateutil==2.9.0.post0
+    # via time-machine
+python-dotenv==1.1.0
+    # via
+    #   -c requirements.txt
+    #   pydantic-settings
+pyyaml==6.0.2
+    # via
+    #   -c requirements.txt
+    #   bandit
+    #   pre-commit
+    #   turbo-sticks
+redis==5.2.1
+    # via
+    #   -c requirements.txt
+    #   pytest-redis
+    #   turbo-sticks
+requests==2.32.3
+    # via
+    #   -c requirements.txt
+    #   requests-oauthlib
+    #   turbo-sticks
+requests-oauthlib==2.0.0
+    # via
+    #   -c requirements.txt
+    #   turbo-sticks
+rich==14.0.0
+    # via bandit
+setuptools==80.0.0
+    # via
+    #   pbr
+    #   types-setuptools
+    #   zope-event
+    #   zope-interface
+six==1.17.0
+    # via python-dateutil
+stevedore==5.4.1
+    # via bandit
+time-machine==2.16.0
+    # via turbo-sticks
+types-cffi==1.17.0.20250326
+    # via types-pyopenssl
+types-gevent==24.11.0.20250401
+    # via turbo-sticks
+types-greenlet==3.2.0.20250417
+    # via
+    #   turbo-sticks
+    #   types-gevent
+types-oauthlib==3.2.0.20250408
+    # via
+    #   turbo-sticks
+    #   types-requests-oauthlib
+types-psutil==7.0.0.20250401
+    # via
+    #   turbo-sticks
+    #   types-gevent
+types-pyopenssl==24.1.0.20240722
+    # via
+    #   turbo-sticks
+    #   types-redis
+types-pyyaml==6.0.12.20250402
+    # via turbo-sticks
+types-redis==4.6.0.20241004
+    # via turbo-sticks
+types-requests==2.32.0.20250328
+    # via
+    #   turbo-sticks
+    #   types-requests-oauthlib
+types-requests-oauthlib==2.0.0.20250306
+    # via turbo-sticks
+types-setuptools==79.0.0.20250422
+    # via types-cffi
+types-uwsgi==2.0.0.20240516
+    # via turbo-sticks
+typing-extensions==4.13.2
+    # via
+    #   -c requirements.txt
+    #   mypy
+    #   psycopg
+    #   psycopg-pool
+    #   pydantic
+    #   pydantic-core
+    #   turbo-sticks
+    #   typing-inspection
+typing-inspection==0.4.0
+    # via
+    #   -c requirements.txt
+    #   pydantic
+    #   pydantic-settings
+urllib3==2.4.0
+    # via
+    #   -c requirements.txt
+    #   requests
+    #   turbo-sticks
+    #   types-requests
+uv==0.6.17
+    # via
+    #   pre-commit-uv
+    #   turbo-sticks
+uwsgi==2.0.29
+    # via
+    #   -c requirements.txt
+    #   turbo-sticks
+virtualenv==20.30.0
+    # via pre-commit
+yarl==1.20.0
+    # via
+    #   -c requirements.txt
+    #   aiohttp
+zope-event==5.0
+    # via
+    #   -c requirements.txt
+    #   gevent
+    #   turbo-sticks
+zope-interface==7.2
+    # via
+    #   -c requirements.txt
+    #   gevent
+    #   turbo-sticks

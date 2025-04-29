@@ -16,7 +16,7 @@ def sign_token(
 
     token = csrf_token[:32]
     secret = config.app_secret.get_secret_value()
-    hash_seed = '%s%s%s%s' % (token, expires_at, session_token, secret)
+    hash_seed = f'{token}{expires_at}{session_token}{secret}'
     return token + sha256(hash_seed.encode('utf-8')).hexdigest()[:32]
 
 

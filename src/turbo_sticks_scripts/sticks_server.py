@@ -34,7 +34,7 @@ mime_types = {
     'woff2': 'font/woff2',
     'xml': 'text/xml',
 }
-cached_files: dict[str, tuple[list['HTTPHeader'], bytes]] = {}
+cached_files: dict[str, tuple[list[HTTPHeader], bytes]] = {}
 
 
 def main() -> None:

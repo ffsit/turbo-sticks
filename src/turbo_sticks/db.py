@@ -5,10 +5,11 @@ import gevent.select
 import logging
 from psycopg import Warning as DBWarning, Error as DBError
 from psycopg_pool import ConnectionPool, PoolTimeout
-from typing import Any, ClassVar, TYPE_CHECKING
 
 import turbo_sticks.config as config
 
+
+from typing import Any, ClassVar, TYPE_CHECKING
 if TYPE_CHECKING:
     from contextlib import _GeneratorContextManager as ContextManager
     from psycopg import Connection

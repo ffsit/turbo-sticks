@@ -3,12 +3,13 @@ from __future__ import annotations
 import json
 from requests_oauthlib import OAuth2Session
 from time import time
-from typing import overload, Any, Literal, TYPE_CHECKING
 
 import turbo_sticks.config as config
 import turbo_sticks.util as util
 from turbo_sticks.db import DBSession
 
+
+from typing import overload, Any, Literal, TYPE_CHECKING
 if TYPE_CHECKING:
     import psycopg
 

@@ -1,30 +1,21 @@
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import Any, Literal, Protocol, TypeVar
-from typing_extensions import NotRequired, TypedDict
+from typing import Any, Literal, NotRequired, TypedDict
 
 
-_F = TypeVar('_F', bound=Callable[..., Any])
-
-JSON = dict[str, 'JSON'] | list['JSON'] | str | int | float | bool | None
-JSONObject = dict[str, JSON]
-JSONArray = list[JSON]
-
-
-class Decorator(Protocol):
-    def __call__(self, __func: _F) -> _F: ...
-
+type JSON = dict[str, JSON] | list[JSON] | str | int | float | bool | None
+type JSONObject = dict[str, JSON]
+type JSONArray = list[JSON]
 
 # NOTE: In the future we may need to parametrize this
-MultiDict = dict[str, list[str]]
-HTTPHeader = tuple[str, str]
-Response = tuple[bytes, list[HTTPHeader], str]
+type MultiDict = dict[str, list[str]]
+type HTTPHeader = tuple[str, str]
+type Response = tuple[bytes, list[HTTPHeader], str]
 
-HTTPScheme = Literal['http', 'https']
-WSScheme = Literal['ws', 'wss']
+type HTTPScheme = Literal['http', 'https']
+type WSScheme = Literal['ws', 'wss']
 
-URLBase = Literal['base', 'api', 'websockets']
+type URLBase = Literal['base', 'api', 'websockets']
 
 
 class StreamEmbed(TypedDict):
@@ -41,7 +32,7 @@ class OAuth2Token(TypedDict):
 
 
 # Webchat types
-Rank = Literal[
+type Rank = Literal[
     'crew',
     'mod',
     'helper',
@@ -75,7 +66,7 @@ class OnlineMembers(TypedDict):
 
 
 # Mastodon API types
-MastodonAccountPrivacy = Literal[
+type MastodonAccountPrivacy = Literal[
     'public',
     'unlisted',
     'private',

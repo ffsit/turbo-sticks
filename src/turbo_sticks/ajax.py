@@ -3,7 +3,6 @@ from __future__ import annotations
 import functools
 import logging
 from oauthlib.oauth2 import OAuth2Error
-from typing import Any, TYPE_CHECKING
 
 import turbo_sticks.config as config
 import turbo_sticks.util as util
@@ -13,6 +12,7 @@ from turbo_sticks.session import get_session, retrieve_oauth_account
 from turbo_sticks.user import User
 
 
+from typing import Any, TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Protocol
     from .csrf import TokenClerk

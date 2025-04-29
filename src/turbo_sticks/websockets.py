@@ -14,7 +14,7 @@ from collections.abc import Callable
 from enum import Enum
 from oauthlib.oauth2 import OAuth2Error
 from redis import Redis
-from typing import cast, overload, Any, ClassVar, TypeVar, TYPE_CHECKING
+from typing import cast, overload, Any, ClassVar, Self, TYPE_CHECKING
 
 import turbo_sticks.config as config
 import turbo_sticks.util as util
@@ -37,17 +37,12 @@ if TYPE_CHECKING:
     from greenlet import greenlet as greenlet_t
     from redis.client import PubSub
     from typing import Literal
-    from .types import (
-        Decorator, FormattedMember, FormattedMessage, OnlineMembers, Rank
-    )
+    from .types import FormattedMember, FormattedMessage, OnlineMembers, Rank
 
-    _T = TypeVar('_T')
-    _F = TypeVar('_F', bound=Callable[..., Any])
-    CallbackOrMethodName = str | Callable[[], None]
-    EventDestination = Literal['bot', 'channel', 'client']
+type CallbackOrMethodName = str | Callable[[], None]
+type EventDestination = Literal['bot', 'channel', 'client']
 
 
-_C = TypeVar('_C', bound='Client')
 logger = logging.getLogger('sticks.wss')
 channels = []
 
@@ -74,7 +69,7 @@ class ClientTimeout(ClientError):
     pass
 
 
-def _resolve_callable(obj: _T, func: CallbackOrMethodName | None) -> None:
+def _resolve_callable(obj: object, func: CallbackOrMethodName | None) -> None:
     if callable(func):
         func()
     elif isinstance(func, str) and hasattr(obj, func):
@@ -83,27 +78,27 @@ def _resolve_callable(obj: _T, func: CallbackOrMethodName | None) -> None:
 
 # Client job decorator
 @overload
-def client_job(
+def client_job[F: Callable[..., Any]](
     func:      None = None,
     *,
     on_error:  CallbackOrMethodName | None = None,
     on_finish: CallbackOrMethodName | None = None
-) -> Decorator: ...
+) -> Callable[[F], F]: ...
 @overload  # noqa: E302
-def client_job(
-    func:      _F,
+def client_job[F: Callable[..., Any]](
+    func:      F,
     *,
     on_error:  CallbackOrMethodName | None = None,
     on_finish: CallbackOrMethodName | None = None
-) -> _F: ...
-def client_job(  # noqa: E302
-    func:      _F | None = None,
+) -> F: ...
+def client_job[F: Callable[..., Any]](  # noqa: E302
+    func:      F | None = None,
     *,
     on_error:  CallbackOrMethodName | None = None,
     on_finish: CallbackOrMethodName | None = None
-) -> Decorator | _F:
+) -> Callable[[F], F] | F:
 
-    def decorator(func: _F) -> _F:
+    def decorator(func: F) -> F:
         @functools.wraps(func)
         def wrapper(self: Client, *args: Any, **kwargs: Any) -> Any:
             logger.debug(
@@ -144,33 +139,33 @@ def client_job(  # noqa: E302
                 logger.debug(
                     f'<Client {self.id}> Finished greenlet {func.__name__}.'
                 )
-        return cast('_F', wrapper)
+        return cast('F', wrapper)
     return decorator(func) if func is not None else decorator
 
 
 # Channel job decorator
 @overload
-def channel_job(
+def channel_job[F: Callable[..., Any]](
     func:      None = None,
     *,
     on_error:  CallbackOrMethodName | None = None,
     on_finish: CallbackOrMethodName | None = None
-) -> Decorator: ...
+) -> Callable[[F], F]: ...
 @overload  # noqa: E302
-def channel_job(
-    func:      _F,
+def channel_job[F: Callable[..., Any]](
+    func:      F,
     *,
     on_error:  CallbackOrMethodName | None = None,
     on_finish: CallbackOrMethodName | None = None
-) -> _F: ...
-def channel_job(  # noqa: E302
-    func:      _F | None = None,
+) -> F: ...
+def channel_job[F: Callable[..., Any]](  # noqa: E302
+    func:      F | None = None,
     *,
     on_error:  CallbackOrMethodName | None = None,
     on_finish: CallbackOrMethodName | None = None
-) -> Decorator | _F:
+) -> Callable[[F], F] | F:
 
-    def decorator(func: _F) -> _F:
+    def decorator(func: F) -> F:
         @functools.wraps(func)
         def wrapper(self: Channel, *args: Any, **kwargs: Any) -> Any:
             logger.debug(
@@ -198,7 +193,7 @@ def channel_job(  # noqa: E302
                 logger.debug(
                     f'<Channel {self.name}> Finished greenlet {func.__name__}.'
                 )
-        return cast('_F', wrapper)
+        return cast('F', wrapper)
     return decorator(func) if func is not None else decorator
 
 
@@ -354,7 +349,7 @@ class Client:
         self.spawn_jobs()
         self.main_loop()
 
-    def resume(self: _C, client: _C) -> None:
+    def resume(self, client: Self) -> None:
         self.job_state = JobState.suspended
         gevent.sleep(0.2)
         self.channel.remove_client(self)
@@ -374,7 +369,7 @@ class Client:
             self.event.wait(3.0)
             try:
                 message = uwsgi.websocket_recv_nb()
-            except IOError:
+            except OSError:
                 if self.state == ClientState.started:
                     self.state = ClientState.suspended
                 break
@@ -398,7 +393,7 @@ class Client:
         self.state = ClientState.exited
         self.job_state = JobState.exited
         if block:
-            greenlets: 'Sequence[greenlet_t]'
+            greenlets: Sequence[greenlet_t]
             if self.greenlet is None:
                 greenlets = self.jobs
             else:

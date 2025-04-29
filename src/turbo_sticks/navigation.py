@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from urllib.parse import quote_plus
-from typing import NamedTuple, TYPE_CHECKING
 
 from turbo_sticks.enums import ACL
 from turbo_sticks.user import User
 
+
+from typing import NamedTuple, TYPE_CHECKING
 if TYPE_CHECKING:
     from .views import View
 

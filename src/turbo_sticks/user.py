@@ -1,17 +1,16 @@
 from __future__ import annotations
 
 from hashlib import md5
-from typing import overload, TypeVar, TYPE_CHECKING
 
 import turbo_sticks.config as config
 from turbo_sticks.db import DBSession
 from turbo_sticks.enums import ACL
 from turbo_sticks.util import encrypt, decrypt, urandom
 
+
+from typing import overload, Self, TYPE_CHECKING
 if TYPE_CHECKING:
     from .types import MastodonAccount
-
-    _U = TypeVar('_U', bound='BaseUser')
 
 
 # Password Helpers
@@ -57,20 +56,19 @@ class BaseUser:
 
     @overload
     @classmethod
-    def get(cls: type[_U], *, uid: int) -> _U | None: ...
+    def get(cls, *, uid: int) -> Self | None: ...
     @overload  # noqa: E301
     @classmethod
-    def get(cls: type[_U], *, username: str, fuzzy: bool = False
-            ) -> _U | None: ...
+    def get(cls, *, username: str, fuzzy: bool = False) -> Self | None: ...
 
     @classmethod
     def get(
-        cls: type[_U],
+        cls,
         *,
         uid:      int | None = None,
         username: str | None = None,
         fuzzy:    bool = False
-    ) -> _U | None:
+    ) -> Self | None:
 
         if username:
             uid = BaseUser.uid_from_username(username, fuzzy)

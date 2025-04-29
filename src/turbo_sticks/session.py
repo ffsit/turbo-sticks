@@ -4,7 +4,6 @@ import json
 from psycopg.sql import SQL, Literal
 from requests_oauthlib import OAuth2Session
 from time import time
-from typing import Any, TYPE_CHECKING
 
 import turbo_sticks.config as config
 from turbo_sticks.db import DBSession
@@ -14,6 +13,7 @@ from turbo_sticks.util import (
 )
 
 
+from typing import Any, TYPE_CHECKING
 if TYPE_CHECKING:
     from .csrf import TokenClerk
     from .types import MastodonAccount

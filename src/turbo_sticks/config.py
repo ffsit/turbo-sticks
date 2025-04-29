@@ -4,7 +4,7 @@ import os
 import yaml
 from collections.abc import Iterator
 from contextlib import contextmanager
-from pydantic_core.core_schema import FieldValidationInfo
+from pydantic_core.core_schema import ValidationInfo
 from pydantic import (
     BaseModel, PositiveInt, PostgresDsn, SecretStr, field_validator
 )
@@ -115,7 +115,7 @@ class DBPoolConfig(BaseModel):
 
     @field_validator('max_size')
     @classmethod
-    def max_ge_min(cls, v: int, info: FieldValidationInfo) -> None:
+    def max_ge_min(cls, v: int, info: ValidationInfo) -> None:
         if v < info.data.get('min_size', 0):
             raise ValueError('needs to be greater or equal to min_size.')
 
@@ -203,7 +203,7 @@ class SticksConfig(BaseSettings):
 # TODO: We probably want an explicit function call to load the config.
 #       However, right now this may pose some structural restrictions.
 _config_file = os.getenv('STICKS_CONFIG', 'turbo-config.yaml')
-with open(_config_file, 'r') as fp:
+with open(_config_file) as fp:
     _config = SticksConfig(**yaml.safe_load(fp))
 
 

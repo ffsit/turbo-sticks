@@ -70,16 +70,32 @@ async def guild(base_bot):
         return guild
 
 
+# NOTE: backend.make_role is currently broken, because it always sets
+#       the position of the role to `1`, and sorting by id_num is in
+#       reverse, which means our lower roles get higher priority which
+#       is the opposite of what we want. We fix this by setting the
+#       position to the same value as the id_num
+def make_role(backend, name, guild, id_num):
+    role_dict = backend.facts.make_role_dict(
+        name,
+        id_num=id_num,
+        position=id_num
+    )
+    state = backend.get_state()
+    state.parse_guild_role_create({'guild_id': guild.id, 'role': role_dict})
+    return guild.get_role(role_dict['id'])
+
+
 @pytest_asyncio.fixture
 async def roles(guild):
     with stop_dispatch():
         return {
-            'crew': backend.make_role('crew', guild, id_num=6),
-            'moderator': backend.make_role('moderator', guild, id_num=5),
-            'helper': backend.make_role('helper', guild, id_num=4),
-            'vip': backend.make_role('vip', guild, id_num=3),
-            'turbo': backend.make_role('turbo', guild, id_num=2),
-            'default': backend.make_role('default', guild, id_num=1),
+            'crew': make_role(backend, 'crew', guild, id_num=6),
+            'moderator': make_role(backend, 'moderator', guild, id_num=5),
+            'helper': make_role(backend, 'helper', guild, id_num=4),
+            'vip': make_role(backend, 'vip', guild, id_num=3),
+            'turbo': make_role(backend, 'turbo', guild, id_num=2),
+            'default': make_role(backend, 'default', guild, id_num=1),
         }
 
 
@@ -691,12 +707,18 @@ async def test_on_message_timed_out(bot, channel, member, redisdb, webchat):
 
 async def edit_message(message, **fields):
     # HACK: This gets around there not being a proper edit_message method
-    state = backend.get_state()
     data = backend.facts.dict_from_message(message)
+    if hasattr(message.channel, 'guild'):
+        data['guild_id'] = message.channel.guild.id
     data['channel_id'] = message.channel.id
     data.update(**fields)
+    state = backend.get_state()
     state.parse_message_update(data)
     await dpytest.run_all_events()
+
+    if not dpytest.error_queue.empty():
+        err = await dpytest.error_queue.get()
+        raise err[1]
 
 
 @pytest.mark.asyncio

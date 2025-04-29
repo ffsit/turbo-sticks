@@ -8,16 +8,17 @@ import re
 import time
 import uuid
 from collections.abc import Iterable
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from discord import app_commands
 from discord.ext import tasks
 from itertools import islice
 from redis import Redis
-from typing import Any, TYPE_CHECKING
 
 import turbo_sticks.config as config
 import turbo_sticks.util as util
 
+
+from typing import Any, TYPE_CHECKING
 if TYPE_CHECKING:
     from redis.client import PubSub
     from .types import FormattedMember, FormattedMessage, Rank
@@ -29,11 +30,11 @@ _emoji_regex = re.compile(r'<:\w+:\d+>')
 
 
 def get_epoch_from_datetime(dt: datetime) -> float:
-    epoch = datetime.utcfromtimestamp(0)
-    assert epoch.tzinfo is None
-    if dt.tzinfo is not None:
-        # if we get a tz-aware dt we need to specify that our epoch is in UTC
-        epoch = epoch.replace(tzinfo=timezone.utc)
+    epoch = datetime.fromtimestamp(0, UTC)
+    assert epoch.tzinfo is not None
+    if dt.tzinfo is None:
+        # if we get a tz-naive dt we need to strip the tzinfo from our epoch
+        epoch = epoch.replace(tzinfo=None)
     return (dt - epoch) / timedelta(seconds=1)
 
 

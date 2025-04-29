@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import logging
 import requests
-from typing import TYPE_CHECKING
 
 from turbo_sticks.config import discord
 from turbo_sticks.util import user_agent
 
+
+from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .types import DiscordGuildMember
     from .types import DiscordRole

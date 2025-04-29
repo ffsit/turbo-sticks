@@ -60,7 +60,7 @@ def db(postgresql, monkeypatch):
             postgresql.commit()
 
     db_schema = os.path.join(here, '..', 'setup', 'initdb.sql')
-    with open(db_schema, 'r') as fp:
+    with open(db_schema) as fp:
         with postgresql.cursor() as cur:
             cur.execute(fp.read())
         postgresql.commit()

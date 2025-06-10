@@ -235,7 +235,7 @@ redis==5.2.1
     #   -c requirements.txt
     #   pytest-redis
     #   turbo-sticks
-requests==2.32.3
+requests==2.32.4
     # via
     #   -c requirements.txt
     #   requests-oauthlib

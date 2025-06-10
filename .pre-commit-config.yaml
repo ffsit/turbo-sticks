@@ -29,28 +29,28 @@ repos:
         always_run: true
         files: '^$'
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.15.0
+    rev: v1.16.0
     hooks:
       - id: mypy
         additional_dependencies:
-          - cryptography==44.0.2
+          - cryptography==45.0.4
           - discord.py==2.5.2
-          - 'psycopg[c]==3.2.6'
+          - 'psycopg[c]==3.2.9'
           - psycopg-pool==3.2.6
-          - pydantic==2.11.3
-          - pydantic-core==2.33.1
+          - pydantic==2.11.5
+          - pydantic-core==2.33.2
           - pydantic-settings==2.9.1
-          - types-cffi==1.17.0.20250326
-          - types-gevent==24.11.0.20250401
+          - types-cffi==1.17.0.20250523
+          - types-gevent==25.4.0.20250516
           - types-greenlet==3.2.0.20250417
-          - types-oauthlib==3.2.0.20250408
-          - types-psutil==7.0.0.20250401
+          - types-oauthlib==3.2.0.20250516
+          - types-psutil==7.0.0.20250601
           - types-pyopenssl==24.1.0.20240722
-          - types-pyyaml==6.0.12.20250402
+          - types-pyyaml==6.0.12.20250516
           - types-redis==4.6.0.20241004
-          - types-requests==2.32.0.20250328
-          - types-requests-oauthlib==2.0.0.20250306
-          - types-setuptools==79.0.0.20250422
+          - types-requests==2.32.0.20250602
+          - types-requests-oauthlib==2.0.0.20250516
+          - types-setuptools==80.9.0.20250529
           - types-uwsgi==2.0.0.20240516
           - urllib3==2.4.0
         args: ['-p', 'turbo_sticks', '-p', 'turbo_sticks_scripts']

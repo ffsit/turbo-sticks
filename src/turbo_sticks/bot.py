@@ -728,9 +728,7 @@ class SticksBot(discord.Client):
             coro = getattr(self, command)
         else:
             coro = self.command_help
-        # FIXME: This uses an undocumented method without type annotations
-        #        this is a bit fragile and could break with future releases
-        self._schedule_event(coro, command, member, argstr)  # type:ignore
+        self._schedule_event(coro, command, member, argstr)
 
     def is_relevant_message(self, message: discord.Message) -> bool:
         if message.type != discord.MessageType.default:

@@ -50,6 +50,8 @@ Upgrade
 
 Change Log
 -----------
+#### 4.0.1
+Updated version pins
 #### 4.0.0
 Removed Python <3.12 support
 Updated version pins
